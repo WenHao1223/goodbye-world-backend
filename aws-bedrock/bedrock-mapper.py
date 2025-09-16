@@ -3,6 +3,8 @@ import sys
 import json
 from pathlib import Path
 import re
+from datetime import datetime
+from io import StringIO
 
 import boto3
 
@@ -34,7 +36,7 @@ CRITICAL RULES:
   * first part, 7-digit numeric codes that are clearly licence numbers (NOT dates, NOT identity numbers), e.g. "1234567"
   * second part, 8-digit alphanumeric codes that are a randomised mix of upper/lowercase letters + numbers, e.g. "AbC12xYz"
   * join the two parts with a space in between, e.g. "1234567 AbC12xYz"
-- Licence classes: ONLY from "Kelas / Class" field, split into array
+- Licence classes: ONLY from "Kelas / Class" field, split into array, strictly from any option within ["A","A1","B","B1","B2","C","D","DA"]
 - Validity dates: ONLY from "Tempoh / Validity" field
 - Address: ONLY from "Alamat / Address" field
 - Nationality: ONLY from "Warganegara / Nationality" field
@@ -85,14 +87,49 @@ def main():
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     args = parser.parse_args()
     
+    # Capture terminal output
+    log_output = StringIO()
+    
+    def log_print(msg):
+        print(msg)
+        log_output.write(msg + "\n") 
+    
+    # Print parsed arguments
+    log_print(f"[INFO] Using files: {', '.join(args.files)}")
+    log_print(f"[INFO] Using region: {args.region}")
+    log_print(f"[INFO] Using profile: {args.profile if args.profile else 'default'}")
+    
     # Combine all files into one text
     combined_text = ""
     for i, file_path in enumerate(args.files):
         file_content = load_textract_json(file_path)
         combined_text += f"\n\n=== FILE {i+1}: {file_path} ===\n{file_content}"
     
+    log_print("\n=== BEDROCK EXTRACTION ===")
     extracted = extract_fields(combined_text, args.region, args.profile)
-    print(json.dumps(extracted, indent=2, ensure_ascii=False))
+    result_json = json.dumps(extracted, indent=2, ensure_ascii=False)
+    log_print(result_json)
+    
+    # Create output directories
+    output_dir = Path("output")
+    log_dir = Path("log")
+    output_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(exist_ok=True)
+    
+    # Generate timestamp and filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base_name = Path(args.files[0]).stem if len(args.files) == 1 else "combined"
+    
+    # Save extracted data
+    with open(output_dir / f"{base_name}_extracted_{timestamp}.json", "w", encoding="utf-8") as f:
+        f.write(result_json)
+    
+    # Save log
+    with open(log_dir / f"{base_name}_mapper_{timestamp}.log", "w", encoding="utf-8") as f:
+        f.write(log_output.getvalue())
+    
+    log_print(f"\n[INFO] Results saved to output/{base_name}_extracted_{timestamp}.json")
+    log_print(f"[INFO] Log saved to log/{base_name}_mapper_{timestamp}.log")
 
 if __name__ == "__main__":
     main()
