@@ -243,14 +243,12 @@ def main():
     mode = args.mode.lower()
     resp, client, file_bytes = detect_document_text(args.file, args.region, args.profile)
     
-    # Create folders
-    output_dir = Path("output")
-    log_dir = Path("log")
-    output_dir.mkdir(exist_ok=True)
-    log_dir.mkdir(exist_ok=True)
-    
+    # Create log subdirectory
     file_name = args.file.stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    log_subdir = Path("log") / f"{file_name}_{timestamp}"
+    log_subdir.mkdir(parents=True, exist_ok=True)
 
     if 't' in mode:
         log_print("=== TEXT DETECTION ===")
@@ -263,7 +261,7 @@ def main():
                 log_print(f"text = \"{text}\"  | confidence = {conf:.2f}")
                 text_data.append({"text": text, "confidence": conf})
         
-        with open(output_dir / f"{file_name}_{timestamp}_t.json", "w") as f:
+        with open(log_subdir / "text.json", "w") as f:
             json.dump(text_data, f, indent=2)
 
     if 'f' in mode:
@@ -273,7 +271,7 @@ def main():
         for key, value in kvs.items():
             log_print(f"{key}: {value}")
         
-        with open(output_dir / f"{file_name}_{timestamp}_f.json", "w") as f:
+        with open(log_subdir / "forms.json", "w") as f:
             json.dump(form_data, f, indent=2)
 
     if 'b' in mode:
@@ -286,7 +284,7 @@ def main():
                 log_print("  | " + " | ".join(row) + " |")
             table_data["tables"].append({"table_id": i+1, "rows": table['rows']})
         
-        with open(output_dir / f"{file_name}_{timestamp}_b.json", "w") as f:
+        with open(log_subdir / "tables.json", "w") as f:
             json.dump(table_data, f, indent=2)
 
     if 'q' in mode:
@@ -298,11 +296,11 @@ def main():
             log_print(f"A: {answer}")
             log_print("")
         
-        with open(output_dir / f"{file_name}_{timestamp}_q.json", "w") as f:
+        with open(log_subdir / "queries.json", "w") as f:
             json.dump(queries, f, indent=2)
     
     # Save log
-    with open(log_dir / f"{file_name}_{mode}_{timestamp}.log", "w") as f:
+    with open(log_subdir / "textract.log", "w") as f:
         f.write(log_output.getvalue())
 
 if __name__ == "__main__":
