@@ -14,8 +14,10 @@ Credentials:
 
 import argparse
 import sys
+import json
 from pathlib import Path
 from collections import defaultdict
+from datetime import datetime
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -142,29 +144,50 @@ def main():
 
     mode = args.mode.lower()
     resp, client, image_bytes = detect_document_text(args.image, args.region, args.profile)
+    
+    # Create detection folder
+    detection_dir = Path("detection")
+    detection_dir.mkdir(exist_ok=True)
+    
+    image_name = args.image.stem
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     if 't' in mode:
         print("=== TEXT DETECTION ===")
         blocks = resp.get("Blocks", [])
+        text_data = []
         for b in blocks:
             if b.get("BlockType") == "LINE":
                 text = b.get("Text", "")
                 conf = b.get("Confidence", 0.0)
                 print(f"text = \"{text}\"  | confidence = {conf:.2f}")
+                text_data.append({"text": text, "confidence": conf})
+        
+        with open(detection_dir / f"{image_name}_t_{timestamp}.json", "w") as f:
+            json.dump(text_data, f, indent=2)
 
     if 'f' in mode:
         print("\n=== FORM ANALYSIS ===")
         kvs = analyze_forms(client, image_bytes)
+        form_data = dict(kvs)
         for key, value in kvs.items():
             print(f"{key}: {value}")
+        
+        with open(detection_dir / f"{image_name}_f_{timestamp}.json", "w") as f:
+            json.dump(form_data, f, indent=2)
 
     if 'b' in mode:
         print("\n=== TABLE ANALYSIS ===")
         tables = analyze_tables(client, image_bytes)
+        table_data = {"tables": []}
         for i, table in enumerate(tables):
             print(f"Table {i+1}:")
             for row in table['rows']:
                 print("  | " + " | ".join(row) + " |")
+            table_data["tables"].append({"table_id": i+1, "rows": table['rows']})
+        
+        with open(detection_dir / f"{image_name}_b_{timestamp}.json", "w") as f:
+            json.dump(table_data, f, indent=2)
 
 if __name__ == "__main__":
     main()
