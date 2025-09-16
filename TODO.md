@@ -1,0 +1,25 @@
+ # Text Extract
+ - Documents must be fewer than 11 pages, smaller than 5 MB, and one of the following formats: JPEG, PNG, or PDF.
+
+ ## Verify Identity
+ 1. Extract text from identity verification document
+ 2. Return table-format JSON response
+ 3. Filter only important info for identity verification
+ 4. Return true / false / not enough info to validate
+
+ ## Gov SOPs
+  1. Extract text from government-issued SOP document
+  2. Return table-format JSON response
+  3. Filter only important info for SOP verification
+  4. Return true / false / not enough info to validate
+
+## Verify Payment
+ 1. Extract text from bank receipt
+ 2. Return table-format JSON response
+ 3. Check if correct:
+    - bank account
+    - bank name
+    - beneficiary name
+    - date is after date sending instruction WhatsApp message
+ 4. Check with transaction history
+ 5. Return true / fail to process payment
