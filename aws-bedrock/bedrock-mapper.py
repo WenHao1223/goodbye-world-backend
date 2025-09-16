@@ -2,11 +2,11 @@ import argparse
 import sys
 import json
 from pathlib import Path
-import re
 from datetime import datetime
 from io import StringIO
 
 import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 def load_textract_json(file_path: Path):
     with open(file_path, "r", encoding="latin-1") as f:
@@ -51,8 +51,13 @@ def extract_fields(textract_log: str, type: Literal["licence", "receipt", "idcar
             }
         ]
     }
+
+    # Invoke Bedrock model
+    try:
+        resp = bedrock.invoke_model(modelId="anthropic.claude-3-haiku-20240307-v1:0", body=json.dumps(payload))
+    except (BotoCoreError, ClientError) as e:
+        sys.exit(f"[ERROR] Bedrock invocation failed: {e}")
     
-    resp = bedrock.invoke_model(modelId="anthropic.claude-3-haiku-20240307-v1:0", body=json.dumps(payload))
     result = json.loads(resp["body"].read())
     raw_text = result["content"][0]["text"]
     
