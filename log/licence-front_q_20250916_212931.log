@@ -1,0 +1,24 @@
+[INFO] Using file: aws-textract\files\licence-front.png
+[INFO] Using region: us-east-1
+[INFO] Using profile: greataihackathon-personal
+[INFO] Using mode: q
+
+=== QUERY ANALYSIS ===
+Q: What is the full name?
+A: LIM WEN HAO
+
+Q: What is the date of birth?
+A: 23/12/2004
+
+Q: What is the expiry date?
+A: 23/12/2026
+
+Q: What is the licence validity period?
+A: 30/08/2024 - 23/12/2026
+
+Q: What is the full street address?
+A: 14200 SUNGAI BAKAP, PULAU PINANG
+
+Q: What is the licence class?
+A: B2 DA
+

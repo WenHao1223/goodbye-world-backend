@@ -129,14 +129,78 @@ def analyze_tables(client, file_bytes):
         return tables
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Table analysis failed: {e}")
+    
+def analyze_queries(client, file_bytes, category: str):
+    try:
+        if category == 'licence':
+            queries_config = {
+                'Queries': [
+                    {'Text': 'What is the full name?'},
+                    {'Text': 'What is the date of birth?'},
+                    {'Text': 'What is the expiry date?'},
+                    {"Text": "What is the licence validity period?"},
+                    {'Text': 'What is the licence number?'},
+                    # {'Text': 'What is the string below licence number?'},
+                    {"Text": "What is the licence class?"},
+                    {'Text': 'What is the address?'},
+                ]
+            }
+        else:
+            # TODO: Add more categories as needed
+            queries_config = {
+                'Queries': [
+                    {'Text': 'What is the full name?'},
+                    {'Text': 'What is the date of birth?'},
+                    {'Text': 'What is the expiry date?'},
+                    {'Text': 'What is the document number?'},
+                    {'Text': 'What is the address?'}
+                ]
+            }
+        
+        response = client.analyze_document(
+            Document={'Bytes': file_bytes},
+            FeatureTypes=['QUERIES'],
+            QueriesConfig=queries_config
+        )
+        
+        blocks = response['Blocks']
+        block_map = {block['Id']: block for block in blocks}
+        queries = {}
+        
+        for block in blocks:
+            if block['BlockType'] == 'QUERY':
+                query_text = block['Query']['Text']
+                answer = ''
+                if 'Relationships' in block:
+                    for relationship in block['Relationships']:
+                        if relationship['Type'] == 'ANSWER':
+                            for answer_id in relationship['Ids']:
+                                answer_block = block_map.get(answer_id)
+                                if answer_block and answer_block['BlockType'] == 'QUERY_RESULT':
+                                    answer = answer_block.get('Text', '').strip()
+                queries[query_text] = answer
+        return queries
+    except (BotoCoreError, ClientError) as e:
+        raise SystemExit(f"[ERROR] Query analysis failed: {e}")
+    
 
+# Run from command line with these:
+# python textract_enhanced_local.py --file /path/to/input.jpg --region us-east-1 --mode tfbq --category licence
+# arguments:
+# --file: path to the file (JPEG/PNG/PDF single page)
+# --region: AWS region, e.g., us-east-1
+# --profile: AWS profile name to use (optional)
+# --mode: analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq
+# --category: document category for queries: licence, receipt, sop
 def main():
     parser = argparse.ArgumentParser(description="Run AWS Textract locally with text and form analysis.")
     parser.add_argument("--file", required=True, type=Path, help="Path to the file file (JPEG/PNG/PDF single page).")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region, e.g., us-east-1")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     parser.add_argument("--mode", required=False, default="t", 
-                       help="Analysis mode: t(ext), f(orms), b(tables) - combine letters like tfb")
+                       help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
+    parser.add_argument("--category", required=False, default=None, 
+                       help="Document category for queries: licence, receipt, sop.")
     args = parser.parse_args()
 
     # Capture terminal output
@@ -224,6 +288,18 @@ def main():
         
         with open(output_dir / f"{file_name}_{timestamp}_b.json", "w") as f:
             json.dump(table_data, f, indent=2)
+
+    if 'q' in mode:
+        log_print("\n=== QUERY ANALYSIS ===")
+        category = args.category or 'default'
+        queries = analyze_queries(client, file_bytes, category)
+        for question, answer in queries.items():
+            log_print(f"Q: {question}")
+            log_print(f"A: {answer}")
+            log_print("")
+        
+        with open(output_dir / f"{file_name}_{timestamp}_q.json", "w") as f:
+            json.dump(queries, f, indent=2)
     
     # Save log
     with open(log_dir / f"{file_name}_{mode}_{timestamp}.log", "w") as f:

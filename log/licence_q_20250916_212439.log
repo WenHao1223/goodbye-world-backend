@@ -1,0 +1,30 @@
+[INFO] Using file: aws-textract\files\licence.jpeg
+[INFO] Using region: us-east-1
+[INFO] Using profile: greataihackathon-personal
+[INFO] Using mode: q
+
+=== QUERY ANALYSIS ===
+Q: What is the full name?
+A: LIM WEN HAO
+
+Q: What is the date of birth?
+A: 23/12/2004
+
+Q: What is the expiry date?
+A: 23/12/2026
+
+Q: What is the licence validity period?
+A: 30/08/2024 - 23/12/2026
+
+Q: What is the licence number?
+A: 0107011
+
+Q: What is the string below driving licence number?
+A: DA BTM  3500 KG
+
+Q: What is the licence class?
+A: B2 DA
+
+Q: What is the address?
+A: NO 36, LORONG SERULING EMAS 8, TAMAN SERULING EMAS, 14200 SUNGAI BAKAP, PULAU PINANG
+
