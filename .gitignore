@@ -1,6 +1,3 @@
-.env
-greatAiHackathon_accessKeys.csv
-
 .git/
 .idea/
 
@@ -8,9 +5,17 @@ greatAiHackathon_accessKeys.csv
 .vscode/
 .pytest_cache/
 __pycache__/
-
 .ipynb_checkpoints
 
 aws-texttract/__pycache__/
 aws-texttract/.pytest_cache/
 aws-texttract/.venv/
+
+# Environment files
+.env
+greatAiHackathon_accessKeys.csv
+
+# Local data
+aws-texttract/files/
+log/
+output/
