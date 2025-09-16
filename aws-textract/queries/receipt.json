@@ -6,7 +6,10 @@
     "Text": "What is the transaction amount?"
   },
   {
-    "Text": "What is the account number?"
+    "Text": "What is the beneficiary account number?"
+  },
+  {
+    "Text": "What is the beneficiary name?"
   },
   {
     "Text": "What is the transaction type?"
@@ -15,13 +18,13 @@
     "Text": "What is the reference number?"
   },
   {
-    "Text": "What is the merchant name?"
-  },
-  {
     "Text": "What is the available balance?"
   },
   {
-    "Text": "What is the bank name?"
+    "Text": "What is the sending bank name?"
+  },
+  {
+    "Text": "What is the receiving bank name?"
   },
   {
     "Text": "What is the transaction ID?"

@@ -24,6 +24,12 @@ from typing import Literal
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
+# Capture terminal output
+log_output = StringIO()
+def log_print(msg):
+    print(msg)
+    log_output.write(msg + "\n")
+
 def get_kv_map(client, file_bytes):
     response = client.analyze_document(
         Document={'Bytes': file_bytes},
@@ -133,30 +139,16 @@ def analyze_tables(client, file_bytes):
     
 def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"]):
     try:
-        if category == 'licence':
-            queries_file = Path("aws-bedrock/queries/licence.json")
-            if queries_file.exists():
-                with open(queries_file, "r", encoding="utf-8") as f:
-                    queries_config = json.load(f)
-            else:
-                sys.exit(f"[ERROR] Queries file {queries_file} not found.")
-        elif category == 'receipt':
-            queries_file = Path("aws-bedrock/queries/receipt.json")
-            if queries_file.exists():
-                with open(queries_file, "r", encoding="utf-8") as f:
-                    queries_config = json.load(f)
-            else:
-                sys.exit(f"[ERROR] Queries file {queries_file} not found.")
-        # TODO: based on research on gov SOPs
-        elif category == 'idcard':
-            pass
-        elif category == 'passport':
-            pass
+        queries_dir = Path("aws-textract/queries")
+        queries_file = queries_dir / f"{category}.json" if category else None
+
+        if queries_file and queries_file.exists():
+            log_print(f"[INFO] Using queries: {queries_file}")
+            with open(queries_file, "r", encoding="utf-8") as f:
+                queries_config = {"Queries": json.load(f)}
         else:
-            # TODO: Add more categories as needed
-            queries_config = {
-                'Queries': []
-            }
+            log_print(f"[WARN] Queries file {queries_file} not found or category not specified. Using empty queries.")
+            queries_config = {"Queries": []}
         
         response = client.analyze_document(
             Document={'Bytes': file_bytes},
@@ -204,18 +196,12 @@ def main():
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     args = parser.parse_args()
 
-    # Capture terminal output
-    log_output = StringIO()
-    
-    def log_print(msg):
-        print(msg)
-        log_output.write(msg + "\n")
-
     # Print parsed arguments
     log_print(f"[INFO] Using file: {args.file}")
+    log_print(f"[INFO] Using mode: {args.mode}")
+    log_print(f"[INFO] Document category: {args.category}" if args.category else "N/A")
     log_print(f"[INFO] Using region: {args.region}")
     log_print(f"[INFO] Using profile: {args.profile if args.profile else 'default'}")
-    log_print(f"[INFO] Using mode: {args.mode}")
 
     # Check if file exists
     if not args.file.exists():

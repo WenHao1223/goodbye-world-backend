@@ -21,12 +21,12 @@ aws sts get-caller-identity
 `--category`: licence-front, licence-back
 ```bash
 python aws-textract/textract_local.py --image aws-textract/files/paystub.jpg --region us-east-1 --profile greataihackathon-personal
-python aws-textract/textract_enhanced_local.py --file aws-textract/files/bank-receipt.pdf --region us-east-1 --profile greataihackathon-personal
 ```
 
 ```bash
 python aws-textract/textract_enhanced_local.py --file aws-textract/files/licence.jpeg --mode tfbq --category licence --region us-east-1 --profile greataihackathon-personal 
-python aws-textract/textract_enhanced_local.py --file aws-textract/files/mingjia-licence.jpg --mode tf --region us-east-1 --profile greataihackathon-personal 
+python aws-textract/textract_enhanced_local.py --file aws-textract/files/mingjia-licence.jpg --mode tf --region us-east-1 --profile greataihackathon-personal
+python aws-textract/textract_enhanced_local.py --file aws-textract/files/bank-receipt.pdf --mode tfbq --category receipt --region us-east-1 --profile greataihackathon-personal
 ```
 
 ## Check Bedrock Model Available

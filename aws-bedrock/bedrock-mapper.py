@@ -9,27 +9,24 @@ from typing import Literal
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
+# Capture terminal output
+log_output = StringIO()
+def log_print(msg):
+    print(msg)
+    log_output.write(msg + "\n") 
+
 def load_textract_json(file_path: Path):
     with open(file_path, "r", encoding="latin-1") as f:
         return f.read()
 
 def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passport"]):
-    if category == "licence":
-        prompt_file = Path("aws-bedrock/prompts/licence.txt")
-        if prompt_file.exists():
-            with open(prompt_file, "r", encoding="utf-8") as f:
-                return f.read().strip()
-        else:
-            sys.exit(f"[ERROR] Prompt file {prompt_file} not found.")
-    elif category == "receipt":
-        pass
-    # TODO: based on research on gov SOPs
-    elif category == "idcard":
-        pass
-    elif category == "passport":
-        pass
+    prompt_path = Path(f"aws-bedrock/prompts/{category}.txt")
+    log_print(f"[INFO] Using prompt: {prompt_path}")
+    if prompt_path.exists():
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
     else:
-        sys.exit(f"[ERROR] Unknown prompt category: {category}")
+        sys.exit(f"[ERROR] Prompt file {prompt_path} not found.")
 
 def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: str | None = None):
     session_kwargs = {"region_name": region}
@@ -81,19 +78,11 @@ def main():
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     args = parser.parse_args()
     
-    # Capture terminal output
-    log_output = StringIO()
-    
-    def log_print(msg):
-        print(msg)
-        log_output.write(msg + "\n") 
-    
     # Print parsed arguments
     log_print(f"[INFO] Using files: {', '.join(args.files)}")
-    log_print(f"[INFO] Using region: {args.region}")
     log_print(f"[INFO] Document category: {args.category}")
+    log_print(f"[INFO] Using region: {args.region}")
     log_print(f"[INFO] Using profile: {args.profile if args.profile else 'default'}")
-    log_print(f"[INFO] Using prompt: aws-bedrock/prompts/licence.txt")
     
     # Combine all files into one text
     combined_text = ""

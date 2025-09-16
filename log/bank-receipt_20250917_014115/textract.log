@@ -1,0 +1,47 @@
+[INFO] Using file: aws-textract\files\bank-receipt.pdf
+[INFO] Using mode: q
+[INFO] Document category: receipt
+[INFO] Using region: us-east-1
+[INFO] Using profile: greataihackathon-personal
+
+=== QUERY ANALYSIS ===
+[INFO] Using queries: aws-textract\queries\receipt.json
+Q: What is the transaction date?
+A: 
+
+Q: What is the transaction amount?
+A: 
+
+Q: What is the beneficiary account number?
+A: 8881 0134 2238 3
+
+Q: What is the beneficiary name?
+A: DELLAND PROPERTY MANAGEMENT SDN BHD
+
+Q: What is the transaction type?
+A: 
+
+Q: What is the reference number?
+A: 837356732M
+
+Q: What is the available balance?
+A: 
+
+Q: What is the sending bank name?
+A: AmBANK BERHAD
+
+Q: What is the receiving bank name?
+A: AmBANK BERHAD
+
+Q: What is the transaction ID?
+A: 837356732M
+
+Q: What is the card number?
+A: 837356732M
+
+Q: What is the authorization code?
+A: 
+
+Q: What is the terminal ID?
+A: 837356732M
+
