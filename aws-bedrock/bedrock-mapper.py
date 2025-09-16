@@ -12,39 +12,27 @@ def load_textract_json(file_path: Path):
     with open(file_path, "r", encoding="latin-1") as f:
         return f.read()
 
-def get_system_prompt():
-    return """Extract Malaysian driving licence fields from the provided data.
-Return STRICTLY valid JSON matching this schema:
-{
-  "full_name": string|null,
-  "identity_no": string|null,
-  "date_of_birth": "YYYY-MM-DD"|null,
-  "nationality": string|null,
-  "licence_number": string|null,
-  "licence_classes": [string]|null,
-  "valid_from": "YYYY-MM-DD"|null,
-  "valid_to": "YYYY-MM-DD"|null,
-  "address": string|null
-}
-CRITICAL RULES:
-- ONLY extract data that is EXPLICITLY present in the input
-- DO NOT make up or guess any values
-- If a field is not found, use null
-- Convert dates from DD/MM/YYYY to YYYY-MM-DD format
-- Identity number: ONLY from "No. Pengenalan / Identity No." field
-- Licence number: ONLY a combination of 2 parts
-  * first part, 7-digit numeric codes that are clearly licence numbers (NOT dates, NOT identity numbers), e.g. "1234567"
-  * second part, 8-digit alphanumeric codes that are a randomised mix of upper/lowercase letters and/or numbers, e.g. "AbC12xYz"
-  * join the two parts with a space in between, e.g. "1234567 AbC12xYz"
-- Licence classes: ONLY from "Kelas / Class" field, split into array, strictly from any option within ["A","A1","B","B1","B2","C","D","DA"]
-- Validity dates: ONLY from "Tempoh / Validity" field
-- Address: ONLY from "Alamat / Address" field
-- Nationality: ONLY from "Warganegara / Nationality" field
-- Full name: ONLY if explicitly found in the data
-- Return only valid JSON, no explanations
-"""
+from typing import Literal
 
-def extract_fields(textract_log: str, region: str, profile: str | None = None):
+def get_system_prompt(type: Literal["licence", "receipt", "idcard", "passport"]):
+    if type == "licence":
+        prompt_file = Path("aws-bedrock/prompts/licence.txt")
+        if prompt_file.exists():
+            with open(prompt_file, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        else:
+            sys.exit(f"[ERROR] Prompt file {prompt_file} not found.")
+    elif type == "receipt":
+        pass
+    # based on research on gov SOPs
+    elif type == "idcard":
+        pass
+    elif type == "passport":
+        pass
+    else:
+        sys.exit(f"[ERROR] Unknown prompt type: {type}")
+
+def extract_fields(textract_log: str, type: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: str | None = None):
     session_kwargs = {"region_name": region}
     if profile:
         session_kwargs["profile_name"] = profile
@@ -59,7 +47,7 @@ def extract_fields(textract_log: str, region: str, profile: str | None = None):
         "messages": [
             {
                 "role": "user",
-                "content": f"{get_system_prompt()}\n\nExtract ONLY the data that is explicitly present in this input:\n{textract_log}"
+                "content": f"{get_system_prompt(type)}\n\nExtract ONLY the data that is explicitly present in this input:\n{textract_log}"
             }
         ]
     }
@@ -83,6 +71,7 @@ def extract_fields(textract_log: str, region: str, profile: str | None = None):
 def main():
     parser = argparse.ArgumentParser(description="Extract Malaysian driving licence fields from Textract JSON")
     parser.add_argument("--files", nargs="+", required=True, help="Path(s) to the Textract JSON file(s)")
+    parser.add_argument("--type", required=False, default="licence", choices=["licence", "receipt", "idcard", "passport"], help="Type of document to extract: licence, receipt, idcard, passport")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region, e.g., us-east-1")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     args = parser.parse_args()
@@ -97,7 +86,9 @@ def main():
     # Print parsed arguments
     log_print(f"[INFO] Using files: {', '.join(args.files)}")
     log_print(f"[INFO] Using region: {args.region}")
+    log_print(f"[INFO] Document type: {args.type}")
     log_print(f"[INFO] Using profile: {args.profile if args.profile else 'default'}")
+    log_print(f"[INFO] Using prompt: aws-bedrock/prompts/licence.txt")
     
     # Combine all files into one text
     combined_text = ""
@@ -106,7 +97,7 @@ def main():
         combined_text += f"\n\n=== FILE {i+1}: {file_path} ===\n{file_content}"
     
     log_print("\n=== BEDROCK EXTRACTION ===")
-    extracted = extract_fields(combined_text, args.region, args.profile)
+    extracted = extract_fields(combined_text, args.type, args.region, args.profile)
     result_json = json.dumps(extracted, indent=2, ensure_ascii=False)
     log_print(result_json)
     

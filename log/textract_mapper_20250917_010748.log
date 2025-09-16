@@ -1,0 +1,20 @@
+[INFO] Using files: log/mingjia-licence_20250917_001506/textract.log
+[INFO] Using region: us-east-1
+[INFO] Document type: licence
+[INFO] Using profile: greataihackathon-personal
+[INFO] Using prompt: aws-bedrock/prompts/licence.txt
+
+=== BEDROCK EXTRACTION ===
+{
+  "full_name": "LEE MING JIA",
+  "identity_no": "040218070711",
+  "date_of_birth": "2004-02-18",
+  "nationality": "MALAYSIA",
+  "licence_number": "0107011 mszqlaLh",
+  "licence_classes": [
+    "D"
+  ],
+  "valid_from": "2025-01-20",
+  "valid_to": "2027-02-18",
+  "address": "27 TINGKAT BUKIT MINYAK 2, TAMAN BUKIT MINYAK, ADDRESSLINE3, 14000 BUKIT MERTAJAM, PULAU PINANG"
+}
