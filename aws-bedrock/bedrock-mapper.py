@@ -9,7 +9,7 @@ from io import StringIO
 import boto3
 
 def load_textract_json(file_path: Path):
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, "r", encoding="latin-1") as f:
         return f.read()
 
 def get_system_prompt():
@@ -34,7 +34,7 @@ CRITICAL RULES:
 - Identity number: ONLY from "No. Pengenalan / Identity No." field
 - Licence number: ONLY a combination of 2 parts
   * first part, 7-digit numeric codes that are clearly licence numbers (NOT dates, NOT identity numbers), e.g. "1234567"
-  * second part, 8-digit alphanumeric codes that are a randomised mix of upper/lowercase letters + numbers, e.g. "AbC12xYz"
+  * second part, 8-digit alphanumeric codes that are a randomised mix of upper/lowercase letters and/or numbers, e.g. "AbC12xYz"
   * join the two parts with a space in between, e.g. "1234567 AbC12xYz"
 - Licence classes: ONLY from "Kelas / Class" field, split into array, strictly from any option within ["A","A1","B","B1","B2","C","D","DA"]
 - Validity dates: ONLY from "Tempoh / Validity" field

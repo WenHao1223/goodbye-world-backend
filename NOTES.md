@@ -23,6 +23,7 @@ aws sts get-caller-identity
 python aws-textract/textract_local.py --profile greataihackathon-personal --file aws-textract/files/paystub.jpg --region us-east-1
 python aws-textract/textract_enhanced_local.py --profile greataihackathon-personal --file aws-textract/files/paystub.jpg --region us-east-1 --mode tfbq
 python aws-textract/textract_enhanced_local.py --profile greataihackathon-personal --file aws-textract/files/licence.jpeg --region us-east-1 --mode q --category licence
+python aws-textract/textract_enhanced_local.py --profile greataihackathon-personal --file aws-textract/files/mingjia-licence.jpg --region us-east-1 --mode tf
 ```
 
 ## Check Bedrock Model Available
@@ -33,6 +34,6 @@ python check-bedrock-models.py --profile greataihackathon-personal --region us-e
 ## Mapper
 ```bash
 python aws-bedrock/bedrock-mapper.py --files log/licence_tfbq_20250916_215456.log --profile greataihackathon-personal
-python aws-bedrock/bedrock-mapper.py --files output/licence_20250916_215456_b.json output/licence_20250916_215456_f.json --profile greataihackathon-personal
-python aws-bedrock/bedrock-mapper.py --files output/licence_20250916_215456_b.json output/licence_20250916_215456_f.json output/licence_20250916_215456_q.json --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files output/licence_20250916_215456_f.json output/licence_20250916_215456_t.json --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/mingjia-licence_tf_20250916_230250.log --profile greataihackathon-personal
 ```
