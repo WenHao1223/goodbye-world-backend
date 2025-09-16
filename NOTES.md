@@ -36,7 +36,7 @@ python check-bedrock-models.py --profile greataihackathon-personal --region us-e
 
 ## Mapper
 ```bash
-python aws-bedrock/bedrock-mapper.py --files log/licence_20250916_231316/text.json log/licence_20250916_231316/forms.json --type licence --profile greataihackathon-personal
-python aws-bedrock/bedrock-mapper.py --files log/licence_20250917_001133/textract.log --type licence --profile greataihackathon-personal
-python aws-bedrock/bedrock-mapper.py --files log/mingjia-licence_20250917_001506/textract.log --type licence --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/licence_20250916_231316/text.json log/licence_20250916_231316/forms.json --category licence --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/licence_20250917_001133/textract.log --category licence --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/mingjia-licence_20250917_001506/textract.log --category licence --profile greataihackathon-personal
 ```
