@@ -3,10 +3,10 @@
 textract_enhanced_local.py — Run Amazon Textract locally with both text detection and form analysis.
 
 Usage:
-  python textract_enhanced_local.py --image /path/to/input.jpg --region us-east-1 --mode text
-  python textract_enhanced_local.py --image /path/to/form.png --region us-east-1 --mode forms
+  python textract_enhanced_local.py --file /path/to/input.jpg --region us-east-1 --mode text
+  python textract_enhanced_local.py --file /path/to/form.png --region us-east-1 --mode forms
   # Optionally use a specific AWS profile:
-  AWS_PROFILE=myprofile python textract_enhanced_local.py --image input.png --region us-east-1 --mode both
+  AWS_PROFILE=myprofile python textract_enhanced_local.py --file input.png --region us-east-1 --mode both
 
 Credentials:
   This script uses standard AWS credential resolution (env vars, shared ~/.aws/ files, or SSO).
@@ -22,9 +22,9 @@ from datetime import datetime
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
-def get_kv_map(client, image_bytes):
+def get_kv_map(client, file_bytes):
     response = client.analyze_document(
-        Document={'Bytes': image_bytes},
+        Document={'Bytes': file_bytes},
         FeatureTypes=['FORMS']
     )
     blocks = response['Blocks']
@@ -73,7 +73,7 @@ def get_text(result, blocks_map):
                             text += 'X'
     return text
 
-def detect_document_text(image_path: Path, region: str, profile: str | None = None):
+def detect_document_text(file_path: Path, region: str, profile: str | None = None):
     session_kwargs = {}
     if profile:
         session_kwargs["profile_name"] = profile
@@ -83,27 +83,27 @@ def detect_document_text(image_path: Path, region: str, profile: str | None = No
     session = boto3.Session(**session_kwargs)
     client = session.client("textract")
 
-    with image_path.open("rb") as f:
-        image_bytes = f.read()
+    with file_path.open("rb") as f:
+        file_bytes = f.read()
 
     try:
-        resp = client.detect_document_text(Document={"Bytes": image_bytes})
-        return resp, client, image_bytes
+        resp = client.detect_document_text(Document={"Bytes": file_bytes})
+        return resp, client, file_bytes
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Textract call failed: {e}")
 
-def analyze_forms(client, image_bytes):
+def analyze_forms(client, file_bytes):
     try:
-        key_map, value_map, block_map = get_kv_map(client, image_bytes)
+        key_map, value_map, block_map = get_kv_map(client, file_bytes)
         kvs = get_kv_relationship(key_map, value_map, block_map)
         return kvs
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Form analysis failed: {e}")
 
-def analyze_tables(client, image_bytes):
+def analyze_tables(client, file_bytes):
     try:
         response = client.analyze_document(
-            Document={'Bytes': image_bytes},
+            Document={'Bytes': file_bytes},
             FeatureTypes=['TABLES']
         )
         blocks = response['Blocks']
@@ -131,28 +131,45 @@ def analyze_tables(client, image_bytes):
 
 def main():
     parser = argparse.ArgumentParser(description="Run AWS Textract locally with text and form analysis.")
-    parser.add_argument("--image", required=True, type=Path, help="Path to the image file (JPEG/PNG/PDF single page).")
+    parser.add_argument("--file", required=True, type=Path, help="Path to the file file (JPEG/PNG/PDF single page).")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region, e.g., us-east-1")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     parser.add_argument("--mode", required=False, default="t", 
                        help="Analysis mode: t(ext), f(orms), b(tables) - combine letters like tfb")
     args = parser.parse_args()
 
-    if args.image.suffix.lower() not in [".jpg", ".jpeg", ".png", ".pdf"]:
-        print(f"[ERROR] Unsupported file type: {args.image.suffix}. Only .jpg, .jpeg, .png, .pdf are allowed.", file=sys.stderr)
+    # Check if file exists
+    if not args.file.exists():
+        print(f"[ERROR] File not found: {args.file}", file=sys.stderr)
         sys.exit(2)
-    if not args.image.exists():
-        print(f"[ERROR] File not found: {args.image}", file=sys.stderr)
+    # Validate input file type
+    if args.file.suffix.lower() not in [".jpg", ".jpeg", ".png", ".pdf"]:
+        print(f"[ERROR] Unsupported file type: {args.file.suffix}. Only .jpg, .jpeg, .png, .pdf are allowed.", file=sys.stderr)
         sys.exit(2)
+    # Validate if file is smaller than 5 MB
+    if args.file.stat().st_size > 5 * 1024 * 1024:
+        print(f"[ERROR] File size exceeds 5 MB: {args.file.stat().st_size} bytes.", file=sys.stderr)
+        sys.exit(2)
+    # Validate if document is fewer than 11 pages (only for PDF)
+    if args.file.suffix.lower() == ".pdf":
+        from PyPDF2 import PdfReader
+        try:
+            reader = PdfReader(str(args.file))
+            if len(reader.pages) > 11:
+                print(f"[ERROR] PDF document exceeds 11 pages: {len(reader.pages)} pages.", file=sys.stderr)
+                sys.exit(2)
+        except Exception as e:
+            print(f"[ERROR] Failed to read PDF file: {e}", file=sys.stderr)
+            sys.exit(2)
 
     mode = args.mode.lower()
-    resp, client, image_bytes = detect_document_text(args.image, args.region, args.profile)
+    resp, client, file_bytes = detect_document_text(args.file, args.region, args.profile)
     
     # Create detection folder
     detection_dir = Path("detection")
     detection_dir.mkdir(exist_ok=True)
     
-    image_name = args.image.stem
+    file_name = args.file.stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     if 't' in mode:
@@ -166,22 +183,22 @@ def main():
                 print(f"text = \"{text}\"  | confidence = {conf:.2f}")
                 text_data.append({"text": text, "confidence": conf})
         
-        with open(detection_dir / f"{image_name}_t_{timestamp}.json", "w") as f:
+        with open(detection_dir / f"{file_name}_t_{timestamp}.json", "w") as f:
             json.dump(text_data, f, indent=2)
 
     if 'f' in mode:
         print("\n=== FORM ANALYSIS ===")
-        kvs = analyze_forms(client, image_bytes)
+        kvs = analyze_forms(client, file_bytes)
         form_data = dict(kvs)
         for key, value in kvs.items():
             print(f"{key}: {value}")
         
-        with open(detection_dir / f"{image_name}_f_{timestamp}.json", "w") as f:
+        with open(detection_dir / f"{file_name}_f_{timestamp}.json", "w") as f:
             json.dump(form_data, f, indent=2)
 
     if 'b' in mode:
         print("\n=== TABLE ANALYSIS ===")
-        tables = analyze_tables(client, image_bytes)
+        tables = analyze_tables(client, file_bytes)
         table_data = {"tables": []}
         for i, table in enumerate(tables):
             print(f"Table {i+1}:")
@@ -189,7 +206,7 @@ def main():
                 print("  | " + " | ".join(row) + " |")
             table_data["tables"].append({"table_id": i+1, "rows": table['rows']})
         
-        with open(detection_dir / f"{image_name}_b_{timestamp}.json", "w") as f:
+        with open(detection_dir / f"{file_name}_b_{timestamp}.json", "w") as f:
             json.dump(table_data, f, indent=2)
 
 if __name__ == "__main__":

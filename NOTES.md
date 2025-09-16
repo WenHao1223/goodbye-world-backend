@@ -17,6 +17,6 @@ aws sts get-caller-identity
 
 # Run
 ```bash
-python aws-textract/textract_local.py --profile greataihackathon-personal --image aws-textract/files/paystub.jpg --region us-east-1
-python aws-textract/textract_enhanced_local.py --profile greataihackathon-personal --image aws-textract/files/paystub.jpg --region us-east-1 --mode tfb
+python aws-textract/textract_local.py --profile greataihackathon-personal --file aws-textract/files/paystub.jpg --region us-east-1
+python aws-textract/textract_enhanced_local.py --profile greataihackathon-personal --file aws-textract/files/paystub.jpg --region us-east-1 --mode tfb
 ```
