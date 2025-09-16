@@ -138,8 +138,11 @@ def main():
                        help="Analysis mode: t(ext), f(orms), b(tables) - combine letters like tfb")
     args = parser.parse_args()
 
+    if args.image.suffix.lower() not in [".jpg", ".jpeg", ".png", ".pdf"]:
+        print(f"[ERROR] Unsupported file type: {args.image.suffix}. Only .jpg, .jpeg, .png, .pdf are allowed.", file=sys.stderr)
+        sys.exit(2)
     if not args.image.exists():
-        print(f"[ERROR] Image not found: {args.image}", file=sys.stderr)
+        print(f"[ERROR] File not found: {args.image}", file=sys.stderr)
         sys.exit(2)
 
     mode = args.mode.lower()

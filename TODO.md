@@ -2,20 +2,20 @@
  - Documents must be fewer than 11 pages, smaller than 5 MB, and one of the following formats: JPEG, PNG, or PDF.
 
  ## Verify Identity
- 1. Extract text from identity verification document
- 2. Return table-format JSON response
+ 1. Extract text from identity verification document (DONE)
+ 2. Return table-format JSON response (DONE)
  3. Filter only important info for identity verification
  4. Return true / false / not enough info to validate
 
  ## Gov SOPs
-  1. Extract text from government-issued SOP document
-  2. Return table-format JSON response
+  1. Extract text from government-issued SOP document (DONE)s
+  2. Return table-format JSON response (DONE)
   3. Filter only important info for SOP verification
   4. Return true / false / not enough info to validate
 
 ## Verify Payment
- 1. Extract text from bank receipt
- 2. Return table-format JSON response
+ 1. Extract text from bank receipt (DONE)
+ 2. Return table-format JSON response (DONE)
  3. Check if correct:
     - bank account
     - bank name
