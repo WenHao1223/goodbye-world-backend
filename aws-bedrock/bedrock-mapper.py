@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 from io import StringIO
+from typing import Literal
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -11,8 +12,6 @@ from botocore.exceptions import BotoCoreError, ClientError
 def load_textract_json(file_path: Path):
     with open(file_path, "r", encoding="latin-1") as f:
         return f.read()
-
-from typing import Literal
 
 def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passport"]):
     if category == "licence":
@@ -24,7 +23,7 @@ def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passpor
             sys.exit(f"[ERROR] Prompt file {prompt_file} not found.")
     elif category == "receipt":
         pass
-    # based on research on gov SOPs
+    # TODO: based on research on gov SOPs
     elif category == "idcard":
         pass
     elif category == "passport":
@@ -76,7 +75,8 @@ def extract_fields(textract_log: str, category: Literal["licence", "receipt", "i
 def main():
     parser = argparse.ArgumentParser(description="Extract Malaysian driving licence fields from Textract JSON")
     parser.add_argument("--files", nargs="+", required=True, help="Path(s) to the Textract JSON file(s)")
-    parser.add_argument("--category", required=False, default="licence", choices=["licence", "receipt", "idcard", "passport"], help="category of document to extract: licence, receipt, idcard, passport")
+    parser.add_argument("--category", required=False, default=None,
+                        choices=["licence", "receipt", "idcard", "passport"], help="category of document to extract: licence, receipt, idcard, passport")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region, e.g., us-east-1")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     args = parser.parse_args()

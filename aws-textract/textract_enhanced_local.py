@@ -19,6 +19,7 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 from io import StringIO
+from typing import Literal
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -130,31 +131,31 @@ def analyze_tables(client, file_bytes):
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Table analysis failed: {e}")
     
-def analyze_queries(client, file_bytes, category: str):
+def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"]):
     try:
         if category == 'licence':
-            queries_config = {
-                'Queries': [
-                    {'Text': 'What is the full name?'},
-                    {'Text': 'What is the date of birth?'},
-                    {'Text': 'What is the expiry date?'},
-                    {"Text": "What is the licence validity period?"},
-                    {'Text': 'What is the licence number?'},
-                    # {'Text': 'What is the string below licence number?'},
-                    {"Text": "What is the licence class?"},
-                    {'Text': 'What is the address?'},
-                ]
-            }
+            queries_file = Path("aws-bedrock/queries/licence.json")
+            if queries_file.exists():
+                with open(queries_file, "r", encoding="utf-8") as f:
+                    queries_config = json.load(f)
+            else:
+                sys.exit(f"[ERROR] Queries file {queries_file} not found.")
+        elif category == 'receipt':
+            queries_file = Path("aws-bedrock/queries/receipt.json")
+            if queries_file.exists():
+                with open(queries_file, "r", encoding="utf-8") as f:
+                    queries_config = json.load(f)
+            else:
+                sys.exit(f"[ERROR] Queries file {queries_file} not found.")
+        # TODO: based on research on gov SOPs
+        elif category == 'idcard':
+            pass
+        elif category == 'passport':
+            pass
         else:
             # TODO: Add more categories as needed
             queries_config = {
-                'Queries': [
-                    {'Text': 'What is the full name?'},
-                    {'Text': 'What is the date of birth?'},
-                    {'Text': 'What is the expiry date?'},
-                    {'Text': 'What is the document number?'},
-                    {'Text': 'What is the address?'}
-                ]
+                'Queries': []
             }
         
         response = client.analyze_document(
@@ -195,12 +196,12 @@ def analyze_queries(client, file_bytes, category: str):
 def main():
     parser = argparse.ArgumentParser(description="Run AWS Textract locally with text and form analysis.")
     parser.add_argument("--file", required=True, type=Path, help="Path to the file file (JPEG/PNG/PDF single page).")
+    parser.add_argument("--mode", required=False, default="t",
+                        help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
+    parser.add_argument("--category", required=False,  default=None, choices=["licence", "receipt", "idcard", "passport"],
+                        help="category of document to extract: licence, receipt, idcard, passport")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region, e.g., us-east-1")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
-    parser.add_argument("--mode", required=False, default="t", 
-                       help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
-    parser.add_argument("--category", required=False, default=None, 
-                       help="Document category for queries: licence, receipt, sop.")
     args = parser.parse_args()
 
     # Capture terminal output
@@ -289,7 +290,7 @@ def main():
 
     if 'q' in mode:
         log_print("\n=== QUERY ANALYSIS ===")
-        category = args.category or 'default'
+        category = args.category
         queries = analyze_queries(client, file_bytes, category)
         for question, answer in queries.items():
             log_print(f"Q: {question}")

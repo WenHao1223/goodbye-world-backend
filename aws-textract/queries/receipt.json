@@ -1,0 +1,38 @@
+[
+  {
+    "Text": "What is the transaction date?"
+  },
+  {
+    "Text": "What is the transaction amount?"
+  },
+  {
+    "Text": "What is the account number?"
+  },
+  {
+    "Text": "What is the transaction type?"
+  },
+  {
+    "Text": "What is the reference number?"
+  },
+  {
+    "Text": "What is the merchant name?"
+  },
+  {
+    "Text": "What is the available balance?"
+  },
+  {
+    "Text": "What is the bank name?"
+  },
+  {
+    "Text": "What is the transaction ID?"
+  },
+  {
+    "Text": "What is the card number?"
+  },
+  {
+    "Text": "What is the authorization code?"
+  },
+  {
+    "Text": "What is the terminal ID?"
+  }
+]
