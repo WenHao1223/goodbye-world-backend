@@ -1,0 +1,83 @@
+[INFO] Using file: aws-textract\files\mingjia-licence.jpg
+[INFO] Using region: us-east-1
+[INFO] Using profile: greataihackathon-personal
+[INFO] Using mode: tf
+=== TEXT DETECTION ===
+text = "LESEN MEMANDU"  | confidence = 99.96
+text = "C»"  | confidence = 15.46
+text = "DRIVING LICENCE"  | confidence = 99.78
+text = "MALAYSIA"  | confidence = 99.89
+text = "BERKUATKUA"  | confidence = 92.63
+text = "LEE MING JIA"  | confidence = 99.92
+text = "Tarikh Jalan Lahir / Date Of Birth"  | confidence = 96.29
+text = "No. Pengenalan / Identity No."  | confidence = 98.34
+text = "040218070711"  | confidence = 99.80
+text = "18/02/2004"  | confidence = 99.99
+text = "Warganegara / Nationality"  | confidence = 95.76
+text = "Kelas / Class"  | confidence = 97.16
+text = "MALAYSIA"  | confidence = 99.95
+text = "D"  | confidence = 99.71
+text = "Tempoh / Validity"  | confidence = 93.09
+text = "20/01/2025 18/02/2027"  | confidence = 98.05
+text = "Alamat / Address"  | confidence = 96.13
+text = "27 TINGKAT BUKIT MINYAK 2,"  | confidence = 98.99
+text = "TAMAN BUKIT MINYAK,"  | confidence = 99.36
+text = "Penafian: Imbasan QR code"  | confidence = 87.79
+text = "ADDRESSLINE3,"  | confidence = 91.18
+text = "untuk tujuan penguatkuasa"  | confidence = 92.15
+text = "Jaba"  | confidence = 92.78
+text = "14000 BUKIT MERTAJAM,"  | confidence = 95.29
+text = "sahaja."  | confidence = 98.74
+text = "PULAU PINANG"  | confidence = 99.92
+text = "Month BTM < 450 KG"  | confidence = 79.03
+text = "JPJL6"  | confidence = 97.42
+text = "KELAS LESEN MEMANDU"  | confidence = 99.90
+text = "Driving Licence Classes"  | confidence = 99.86
+text = "0107011"  | confidence = 99.85
+text = "A"  | confidence = 99.36
+text = "E BTM > 7500 KG"  | confidence = 98.76
+text = "mszqlaLh"  | confidence = 90.28
+text = "A1"  | confidence = 99.73
+text = "BTM < 3500 KG"  | confidence = 98.33
+text = "E1 BTM < 7500 KG"  | confidence = 95.75
+text = "B"  | confidence = 84.87
+text = "> 500 SP"  | confidence = 98.75
+text = "E2 BTM < 5000 KG"  | confidence = 98.27
+text = "B1"  | confidence = 96.33
+text = "X 500 SP"  | confidence = 85.11
+text = "F BTM < 5000 KG"  | confidence = 96.55
+text = "B2"  | confidence = 93.73
+text = "< 250 SP"  | confidence = 96.07
+text = "G BTM < 5000 KG"  | confidence = 97.66
+text = "C Motosikal Tiga Roda"  | confidence = 97.70
+text = "H BTM > 5000 KG"  | confidence = 98.40
+text = "all"  | confidence = 85.17
+text = "D BTM 3500 KG"  | confidence = 93.23
+text = "I BTM > 5000 KG"  | confidence = 93.02
+text = "DA BTM 3500 KG"  | confidence = 97.71
+text = "Mahkamah"  | confidence = 96.83
+text = "Katua Pengarah Pengangkutan Jalan"  | confidence = 82.00
+
+=== FORM ANALYSIS ===
+A : ['']
+Mahkamah : ['']
+D : ['']
+E : ['BTM > 7500 KG ']
+H : ['BTM > 5000 KG ']
+I : ['BTM > 5000 KG ']
+DA : ['']
+F : ['BTM < 5000 KG ']
+G : ['BTM < 5000 KG ']
+A1 : ['BTM < 3500 KG ']
+E2 : ['BTM < 5000 KG ']
+Warganegara / Nationality : ['MALAYSIA ']
+Tarikh Lahir / Date Of Birth : ['18/02/2004 ']
+Alamat / Address : ['27 TINGKAT BUKIT MINYAK 2, TAMAN BUKIT MINYAK, ADDRESSLINE3, 14000 BUKIT MERTAJAM, PULAU PINANG ']
+Kelas / Class : ['D ']
+Tempoh / Validity : ['20/01/2025 18/02/2027 ']
+No. Pengenalan / Identity No. : ['040218070711 ']
+Motosikal Tiga Roda : ['']
+E1 : ['BTM < 7500 KG ']
+Katua Pengarah Pengangkutan : ['Jalan ']
+Penafian: : ['Imbasan QR code untuk tujuan penguatkuasa sahaja. ']
+BTM 3500 KG : ['', '']

@@ -20,7 +20,8 @@ aws sts get-caller-identity
 `--mode`: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq
 `--category`: licence-front, licence-back
 ```bash
-python aws-textract/textract_local.py --profile greataihackathon-personal --file aws-textract/files/paystub.jpg --region us-east-1
+python aws-textract/textract_local.py --profile greataihackathon-personal --image aws-textract/files/paystub.jpg --region us-east-1
+python aws-textract/textract_enhanced_local.py --profile greataihackathon-personal --file aws-textract/files/bank-receipt.pdf --region us-east-1
 ```
 
 ```bash
@@ -37,4 +38,6 @@ python check-bedrock-models.py --profile greataihackathon-personal --region us-e
 ```bash
 python aws-bedrock/bedrock-mapper.py --files log/licence_20250916_231316/text.json log/licence_20250916_231316/forms.json --profile greataihackathon-personal
 python aws-bedrock/bedrock-mapper.py --files log/mingjia-licence_20250916_231133/textract.log --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/licence_20250917_001133/textract.log --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/mingjia-licence_20250917_001506/textract.log --profile greataihackathon-personal
 ```

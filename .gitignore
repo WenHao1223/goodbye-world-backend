@@ -16,6 +16,6 @@ aws-texttract/.venv/
 greatAiHackathon_accessKeys.csv
 
 # Local data
-aws-texttract/files/
-log/
-output/
+# aws-texttract/files/
+# log/
+# output/
