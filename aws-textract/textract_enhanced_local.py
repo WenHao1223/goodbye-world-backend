@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
+from io import StringIO
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -138,17 +139,30 @@ def main():
                        help="Analysis mode: t(ext), f(orms), b(tables) - combine letters like tfb")
     args = parser.parse_args()
 
+    # Capture terminal output
+    log_output = StringIO()
+    
+    def log_print(msg):
+        print(msg)
+        log_output.write(msg + "\n")
+
+    # Print parsed arguments
+    log_print(f"[INFO] Using file: {args.file}")
+    log_print(f"[INFO] Using region: {args.region}")
+    log_print(f"[INFO] Using profile: {args.profile if args.profile else 'default'}")
+    log_print(f"[INFO] Using mode: {args.mode}")
+
     # Check if file exists
     if not args.file.exists():
-        print(f"[ERROR] File not found: {args.file}", file=sys.stderr)
+        log_print(f"[ERROR] File not found: {args.file}", file=sys.stderr)
         sys.exit(2)
     # Validate input file type
     if args.file.suffix.lower() not in [".jpg", ".jpeg", ".png", ".pdf"]:
-        print(f"[ERROR] Unsupported file type: {args.file.suffix}. Only .jpg, .jpeg, .png, .pdf are allowed.", file=sys.stderr)
+        log_print(f"[ERROR] Unsupported file type: {args.file.suffix}. Only .jpg, .jpeg, .png, .pdf are allowed.", file=sys.stderr)
         sys.exit(2)
     # Validate if file is smaller than 5 MB
     if args.file.stat().st_size > 5 * 1024 * 1024:
-        print(f"[ERROR] File size exceeds 5 MB: {args.file.stat().st_size} bytes.", file=sys.stderr)
+        log_print(f"[ERROR] File size exceeds 5 MB: {args.file.stat().st_size} bytes.", file=sys.stderr)
         sys.exit(2)
     # Validate if document is fewer than 11 pages (only for PDF)
     if args.file.suffix.lower() == ".pdf":
@@ -156,58 +170,64 @@ def main():
         try:
             reader = PdfReader(str(args.file))
             if len(reader.pages) > 11:
-                print(f"[ERROR] PDF document exceeds 11 pages: {len(reader.pages)} pages.", file=sys.stderr)
+                log_print(f"[ERROR] PDF document exceeds 11 pages: {len(reader.pages)} pages.", file=sys.stderr)
                 sys.exit(2)
         except Exception as e:
-            print(f"[ERROR] Failed to read PDF file: {e}", file=sys.stderr)
+            log_print(f"[ERROR] Failed to read PDF file: {e}", file=sys.stderr)
             sys.exit(2)
 
     mode = args.mode.lower()
     resp, client, file_bytes = detect_document_text(args.file, args.region, args.profile)
     
-    # Create detection folder
-    detection_dir = Path("detection")
-    detection_dir.mkdir(exist_ok=True)
+    # Create folders
+    output_dir = Path("output")
+    log_dir = Path("log")
+    output_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(exist_ok=True)
     
     file_name = args.file.stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     if 't' in mode:
-        print("=== TEXT DETECTION ===")
+        log_print("=== TEXT DETECTION ===")
         blocks = resp.get("Blocks", [])
         text_data = []
         for b in blocks:
             if b.get("BlockType") == "LINE":
                 text = b.get("Text", "")
                 conf = b.get("Confidence", 0.0)
-                print(f"text = \"{text}\"  | confidence = {conf:.2f}")
+                log_print(f"text = \"{text}\"  | confidence = {conf:.2f}")
                 text_data.append({"text": text, "confidence": conf})
         
-        with open(detection_dir / f"{file_name}_t_{timestamp}.json", "w") as f:
+        with open(output_dir / f"{file_name}_{timestamp}_t.json", "w") as f:
             json.dump(text_data, f, indent=2)
 
     if 'f' in mode:
-        print("\n=== FORM ANALYSIS ===")
+        log_print("\n=== FORM ANALYSIS ===")
         kvs = analyze_forms(client, file_bytes)
         form_data = dict(kvs)
         for key, value in kvs.items():
-            print(f"{key}: {value}")
+            log_print(f"{key}: {value}")
         
-        with open(detection_dir / f"{file_name}_f_{timestamp}.json", "w") as f:
+        with open(output_dir / f"{file_name}_{timestamp}_f.json", "w") as f:
             json.dump(form_data, f, indent=2)
 
     if 'b' in mode:
-        print("\n=== TABLE ANALYSIS ===")
+        log_print("\n=== TABLE ANALYSIS ===")
         tables = analyze_tables(client, file_bytes)
         table_data = {"tables": []}
         for i, table in enumerate(tables):
-            print(f"Table {i+1}:")
+            log_print(f"Table {i+1}:")
             for row in table['rows']:
-                print("  | " + " | ".join(row) + " |")
+                log_print("  | " + " | ".join(row) + " |")
             table_data["tables"].append({"table_id": i+1, "rows": table['rows']})
         
-        with open(detection_dir / f"{file_name}_b_{timestamp}.json", "w") as f:
+        with open(output_dir / f"{file_name}_{timestamp}_b.json", "w") as f:
             json.dump(table_data, f, indent=2)
+    
+    # Save log
+    with open(log_dir / f"{file_name}_{mode}_{timestamp}.log", "w") as f:
+        f.write(log_output.getvalue())
 
 if __name__ == "__main__":
     main()
