@@ -23,3 +23,12 @@
     - date is after date sending instruction WhatsApp message
  4. Check with transaction history
  5. Return true / fail to process payment
+
+## Checklist
+ 1. Canonical Licence scheme + mapper from current JSON
+ 2. Validation module (formats, confidence, expiry)
+ 3. Face match + (optional) liveness step in the chat flow.
+ 4. Case creation + summons lookup integration.
+ 5. Payment intent endpoint + WhatsApp pay CTA + webhook handler.
+ 6. Consent & audit logging, encryption, retention, masking.
+ 7. Fallback flows & manual review tooling.
