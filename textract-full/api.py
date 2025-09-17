@@ -27,7 +27,11 @@ def analyze_document():
         mode = request.form.get('mode', 'tfbq')
         category = request.form.get('category')
         region = request.form.get('region', 'us-east-1')
-        profile = request.form.get('profile')
+        
+        # Get AWS credentials from request or environment
+        aws_access_key = request.form.get('aws_access_key_id')
+        aws_secret_key = request.form.get('aws_secret_access_key')
+        aws_session_token = request.form.get('aws_session_token')  # Optional for temporary credentials
         
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as tmp_file:
@@ -35,18 +39,30 @@ def analyze_document():
             temp_path = tmp_file.name
         
         try:
-            # Build CLI command
-            cmd = ['python', 'cli.py', '--file', temp_path, '--mode', mode, '--region', region]
+            # Set AWS credentials as environment variables
+            env = os.environ.copy()
+            if aws_access_key and aws_secret_key:
+                env['AWS_ACCESS_KEY_ID'] = aws_access_key
+                env['AWS_SECRET_ACCESS_KEY'] = aws_secret_key
+                if aws_session_token:
+                    env['AWS_SESSION_TOKEN'] = aws_session_token
+            
+            # Use uv run to ensure virtual environment is used
+            cmd = ['uv', 'run', 'python', 'cli.py', '--file', temp_path, '--mode', mode, '--region', region]
             if category:
                 cmd.extend(['--category', category])
-            if profile:
-                cmd.extend(['--profile', profile])
             
-            # Run CLI command
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=Path(__file__).parent)
+            # Run CLI command with environment variables
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=Path(__file__).parent, env=env)
             
             if result.returncode != 0:
-                return jsonify({'error': f'Processing failed: {result.stderr}'}), 500
+                error_msg = result.stderr or result.stdout or 'Unknown error'
+                return jsonify({
+                    'error': f'API Endpoint Processing failed: {error_msg}',
+                    'returncode': result.returncode,
+                    'stdout': result.stdout,
+                    'stderr': result.stderr
+                }), 500
             
             # Parse output files
             response = {'status': 'success', 'console_output': result.stdout}
@@ -82,6 +98,11 @@ def analyze_document():
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy'})
+
+@app.route('/', methods=['GET'])
+def test_page():
+    with open('test_api.html', 'r') as f:
+        return f.read()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

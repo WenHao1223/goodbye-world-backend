@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Textract Full API Test</title>
+</head>
+<body>
+    <h1>Textract Full API Test</h1>
+    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div>
+            <label>File:</label>
+            <input type="file" name="file" accept=".jpg,.jpeg,.png,.pdf" required>
+        </div>
+        
+        <div>
+            <label>Mode:</label>
+            <input type="text" name="mode" value="tfbq" placeholder="t,f,b,q">
+        </div>
+        
+        <div>
+            <label>Category:</label>
+            <select name="category">
+                <option value="">None</option>
+                <option value="licence">Licence</option>
+                <option value="receipt">Receipt</option>
+                <option value="idcard">ID Card</option>
+                <option value="passport">Passport</option>
+            </select>
+        </div>
+        
+        <div>
+            <label>Region:</label>
+            <input type="text" name="region" value="us-east-1">
+        </div>
+        
+        <div>
+            <label>AWS Access Key ID:</label>
+            <input type="text" name="aws_access_key_id" required>
+        </div>
+        
+        <div>
+            <label>AWS Secret Access Key:</label>
+            <input type="password" name="aws_secret_access_key" required>
+        </div>
+        
+        <div>
+            <label>AWS Session Token (optional):</label>
+            <input type="text" name="aws_session_token">
+        </div>
+        
+        <button type="submit">Analyze Document</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = 'Processing...';
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                resultDiv.innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

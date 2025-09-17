@@ -1,0 +1,339 @@
+{
+  "console_output": "[INFO] Using file: C:\\Users\\wenhao\\AppData\\Local\\Temp\\tmpyzckp53o.jpeg\n[INFO] Using mode: tfbq\n[INFO] Document category: licence\n[INFO] Using region: us-east-1\n[INFO] Using profile: default\n=== TEXT DETECTION ===\ntext = \"LESEN MEMANDU\"  | confidence = 99.95\ntext = \"DRIVING LICENCE\"  | confidence = 99.51\ntext = \"MALAYSIA\"  | confidence = 99.89\ntext = \"BERKUATKU\"  | confidence = 84.95\ntext = \"LIM WEN HAO\"  | confidence = 99.72\ntext = \"Tarikh Jalan Lahir / Date Of Birth\"  | confidence = 93.86\ntext = \"No. Pengenalan / Identity No.\"  | confidence = 94.48\ntext = \"041223070745\"  | confidence = 99.99\ntext = \"23/12/2004\"  | confidence = 99.96\ntext = \"Warganegara / Nationality\"  | confidence = 93.26\ntext = \"Kelas / Class\"  | confidence = 92.89\ntext = \"MALAYSIA\"  | confidence = 99.96\ntext = \"B2 DA\"  | confidence = 92.80\ntext = \"Tempoh / Validity\"  | confidence = 93.75\ntext = \"30/08/2024 - 23/12/2026\"  | confidence = 89.56\ntext = \"Alamat / Address\"  | confidence = 84.53\ntext = \"NO 36,\"  | confidence = 98.25\ntext = \"LORONG SERULING EMAS 8,\"  | confidence = 92.40\ntext = \"Penafian : Imbasan QR 0\"  | confidence = 88.06\ntext = \"TAMAN SERULING EMAS,\"  | confidence = 97.13\ntext = \"untuk tujuan penguatku\"  | confidence = 99.61\ntext = \"Jaba\"  | confidence = 88.26\ntext = \"14200 SUNGAI BAKAP,\"  | confidence = 92.43\ntext = \"sahaja.\"  | confidence = 98.89\ntext = \"PULAU PINANG\"  | confidence = 99.82\ntext = \"Jalan\"  | confidence = 87.81\ntext = \"JPJL6\"  | confidence = 97.58\ntext = \"KELAS LESEN MEMANDU\"  | confidence = 99.71\ntext = \"Driving Licence Classes\"  | confidence = 99.79\ntext = \"0107011\"  | confidence = 99.88\ntext = \"A BTM < 450 KG\"  | confidence = 96.44\ntext = \"E BTM > 7500 KG\"  | confidence = 98.09\ntext = \"mZyPs9aZ\"  | confidence = 98.42\ntext = \"A1 BTM < 3500 KG\"  | confidence = 98.27\ntext = \"E1 BTM < 7500 KG\"  | confidence = 96.01\ntext = \"B\"  | confidence = 89.84\ntext = \"> 500 SP\"  | confidence = 98.41\ntext = \"E2 BTM < 5000 KG\"  | confidence = 98.17\ntext = \"B1\"  | confidence = 96.14\ntext = \"< 500 SP\"  | confidence = 89.08\ntext = \"F BTM < 5000 KG\"  | confidence = 97.42\ntext = \"B2\"  | confidence = 97.45\ntext = \"< 250 SP\"  | confidence = 82.60\ntext = \"G BTM < 5000 KG\"  | confidence = 96.84\ntext = \"C Motosikal Tiga Roda\"  | confidence = 96.43\ntext = \"H BTM > 5000 KG\"  | confidence = 97.70\ntext = \"all\"  | confidence = 74.08\ntext = \"D BTM 3500 KG\"  | confidence = 96.88\ntext = \"1\"  | confidence = 58.33\ntext = \"BTM > 5000 KG\"  | confidence = 98.41\ntext = \"DA BTM < 3500 KG\"  | confidence = 94.70\ntext = \"Mahkamah\"  | confidence = 34.22\ntext = \"Katua Pengarah Penganglutan Jalan\"  | confidence = 66.53\n\n=== FORM ANALYSIS ===\nTarikh Lahir / Date Of Birth : ['23/12/2004 ']\nWarganegara / Nationality : ['MALAYSIA ']\nKelas / Class : ['B2 DA ']\nTempoh / Validity : ['30/08/2024 - 23/12/2026 ']\nBERKUATKU : ['']\nNo. Pengenalan / Identity No. : ['041223070745 ']\nAlamat / Address : ['NO 36, LORONG SERULING EMAS 8, TAMAN SERULING EMAS, 14200 SUNGAI BAKAP, PULAU PINANG ']\nPenafian : [': Imbasan QR 0 untuk tujuan penguatku sahaja. ']\nDA BTM : ['']\n< 3500 KG : ['Mahkamah ']\n\n=== TABLE ANALYSIS ===\nTable 1:\n  | A | BTM < 450 KG |  | E BTM > 7500 KG |  |\n  | A1 | BTM < 3500 KG |  | E1 BTM < 7500 KG |  |\n  | B | > 500 SP |  | E2 BTM < 5000 KG |  |\n  | B1 | < 500 SP |  | F BTM < 5000 KG |  |\n  | B2 | < 250 SP |  | G BTM < 5000 KG |  |\n  | C | Motosikal Tiga Roda |  | H BTM > 5000 KG |  |\n  | D | BTM 3500 KG |  | 1 BTM > 5000 KG |  |\n  | DA | BTM < 3500 KG |  | Mahkamah |  |\n\n=== QUERY ANALYSIS ===\n[INFO] Using queries: d:\\github-project\\aws-academy\\great-ai-hackathon\\textract-full\\src\\queries\\licence.json\nQ: What is the full name?\nA: LIM WEN HAO\n\nQ: What is the date of birth?\nA: 23/12/2004\n\nQ: What is the expiry date?\nA: 23/12/2026\n\nQ: What is the licence validity period?\nA: 30/08/2024 - 23/12/2026\n\nQ: What is the licence number?\nA: 0107011\n\nQ: What is the string below licence number?\nA: BTM  5000 KG\n\nQ: What is the licence class?\nA: B2 DA\n\nQ: What is the address?\nA: NO 36, LORONG SERULING EMAS 8, TAMAN SERULING EMAS, 14200 SUNGAI BAKAP, PULAU PINANG\n\n\n=== BLUR DETECTION ===\nLaplacian score: 4743.32 - Quality: sharp\nTextract confidence - Median: 96.84, Avg: 95.70, Std: 11.52\nQuality assessment: good\nOverall: CLEAR (confidence: medium)\n\n=== BEDROCK EXTRACTION ===\n[INFO] Using prompt: d:\\github-project\\aws-academy\\great-ai-hackathon\\textract-full\\src\\prompts\\licence.txt\n{\n  \"full_name\": \"LIM WEN HAO\",\n  \"identity_no\": \"041223070745\",\n  \"date_of_birth\": \"2004-12-23\",\n  \"nationality\": \"MALAYSIA\",\n  \"licence_number\": \"0107011 mZyPs9aZ\",\n  \"licence_classes\": [\n    \"B2\",\n    \"DA\"\n  ],\n  \"valid_from\": \"2024-08-30\",\n  \"valid_to\": \"2026-12-23\",\n  \"address\": \"NO 36, LORONG SERULING EMAS 8, TAMAN SERULING EMAS, 14200 SUNGAI BAKAP, PULAU PINANG\"\n}\n\n[INFO] Results saved to output\\tmpyzckp53o_20250917_181121.json\n\n=== PROCESSING COMPLETE ===\n[INFO] Textract results saved to: log\\tmpyzckp53o_20250917_181121\n[INFO] Extracted data saved to: output\\tmpyzckp53o_20250917_181121.json\n[INFO] Image quality appears good\n",
+  "extracted_data": {
+    "address": "NO 36, LORONG SERULING EMAS 8, TAMAN SERULING EMAS, 14200 SUNGAI BAKAP, PULAU PINANG",
+    "date_of_birth": "2004-12-23",
+    "full_name": "LIM WEN HAO",
+    "identity_no": "041223070745",
+    "licence_classes": [
+      "B2",
+      "DA"
+    ],
+    "licence_number": "0107011 mZyPs9aZ",
+    "nationality": "MALAYSIA",
+    "valid_from": "2024-08-30",
+    "valid_to": "2026-12-23"
+  },
+  "forms": {
+    "< 3500 KG ": [
+      "Mahkamah "
+    ],
+    "Alamat / Address ": [
+      "NO 36, LORONG SERULING EMAS 8, TAMAN SERULING EMAS, 14200 SUNGAI BAKAP, PULAU PINANG "
+    ],
+    "BERKUATKU ": [
+      ""
+    ],
+    "DA BTM ": [
+      ""
+    ],
+    "Kelas / Class ": [
+      "B2 DA "
+    ],
+    "No. Pengenalan / Identity No. ": [
+      "041223070745 "
+    ],
+    "Penafian ": [
+      ": Imbasan QR 0 untuk tujuan penguatku sahaja. "
+    ],
+    "Tarikh Lahir / Date Of Birth ": [
+      "23/12/2004 "
+    ],
+    "Tempoh / Validity ": [
+      "30/08/2024 - 23/12/2026 "
+    ],
+    "Warganegara / Nationality ": [
+      "MALAYSIA "
+    ]
+  },
+  "queries": {
+    "What is the address?": "NO 36, LORONG SERULING EMAS 8, TAMAN SERULING EMAS, 14200 SUNGAI BAKAP, PULAU PINANG",
+    "What is the date of birth?": "23/12/2004",
+    "What is the expiry date?": "23/12/2026",
+    "What is the full name?": "LIM WEN HAO",
+    "What is the licence class?": "B2 DA",
+    "What is the licence number?": "0107011",
+    "What is the licence validity period?": "30/08/2024 - 23/12/2026",
+    "What is the string below licence number?": "BTM  5000 KG"
+  },
+  "status": "success",
+  "tables": {
+    "tables": [
+      {
+        "rows": [
+          [
+            "A",
+            "BTM < 450 KG",
+            "",
+            "E BTM > 7500 KG",
+            ""
+          ],
+          [
+            "A1",
+            "BTM < 3500 KG",
+            "",
+            "E1 BTM < 7500 KG",
+            ""
+          ],
+          [
+            "B",
+            "> 500 SP",
+            "",
+            "E2 BTM < 5000 KG",
+            ""
+          ],
+          [
+            "B1",
+            "< 500 SP",
+            "",
+            "F BTM < 5000 KG",
+            ""
+          ],
+          [
+            "B2",
+            "< 250 SP",
+            "",
+            "G BTM < 5000 KG",
+            ""
+          ],
+          [
+            "C",
+            "Motosikal Tiga Roda",
+            "",
+            "H BTM > 5000 KG",
+            ""
+          ],
+          [
+            "D",
+            "BTM 3500 KG",
+            "",
+            "1 BTM > 5000 KG",
+            ""
+          ],
+          [
+            "DA",
+            "BTM < 3500 KG",
+            "",
+            "Mahkamah",
+            ""
+          ]
+        ],
+        "table_id": 1
+      }
+    ]
+  },
+  "text": [
+    {
+      "confidence": 99.951171875,
+      "text": "LESEN MEMANDU"
+    },
+    {
+      "confidence": 99.50823211669922,
+      "text": "DRIVING LICENCE"
+    },
+    {
+      "confidence": 99.89098358154297,
+      "text": "MALAYSIA"
+    },
+    {
+      "confidence": 84.95316314697266,
+      "text": "BERKUATKU"
+    },
+    {
+      "confidence": 99.71932220458984,
+      "text": "LIM WEN HAO"
+    },
+    {
+      "confidence": 93.85728454589844,
+      "text": "Tarikh Jalan Lahir / Date Of Birth"
+    },
+    {
+      "confidence": 94.48030853271484,
+      "text": "No. Pengenalan / Identity No."
+    },
+    {
+      "confidence": 99.990234375,
+      "text": "041223070745"
+    },
+    {
+      "confidence": 99.9609375,
+      "text": "23/12/2004"
+    },
+    {
+      "confidence": 93.25740051269531,
+      "text": "Warganegara / Nationality"
+    },
+    {
+      "confidence": 92.89427947998047,
+      "text": "Kelas / Class"
+    },
+    {
+      "confidence": 99.9609375,
+      "text": "MALAYSIA"
+    },
+    {
+      "confidence": 92.795654296875,
+      "text": "B2 DA"
+    },
+    {
+      "confidence": 93.75006866455078,
+      "text": "Tempoh / Validity"
+    },
+    {
+      "confidence": 89.56224060058594,
+      "text": "30/08/2024 - 23/12/2026"
+    },
+    {
+      "confidence": 84.52520751953125,
+      "text": "Alamat / Address"
+    },
+    {
+      "confidence": 98.25414276123047,
+      "text": "NO 36,"
+    },
+    {
+      "confidence": 92.40293884277344,
+      "text": "LORONG SERULING EMAS 8,"
+    },
+    {
+      "confidence": 88.05998992919922,
+      "text": "Penafian : Imbasan QR 0"
+    },
+    {
+      "confidence": 97.12711334228516,
+      "text": "TAMAN SERULING EMAS,"
+    },
+    {
+      "confidence": 99.61196899414062,
+      "text": "untuk tujuan penguatku"
+    },
+    {
+      "confidence": 88.25514221191406,
+      "text": "Jaba"
+    },
+    {
+      "confidence": 92.42798614501953,
+      "text": "14200 SUNGAI BAKAP,"
+    },
+    {
+      "confidence": 98.89448547363281,
+      "text": "sahaja."
+    },
+    {
+      "confidence": 99.81694030761719,
+      "text": "PULAU PINANG"
+    },
+    {
+      "confidence": 87.80532836914062,
+      "text": "Jalan"
+    },
+    {
+      "confidence": 97.578125,
+      "text": "JPJL6"
+    },
+    {
+      "confidence": 99.70709991455078,
+      "text": "KELAS LESEN MEMANDU"
+    },
+    {
+      "confidence": 99.79119873046875,
+      "text": "Driving Licence Classes"
+    },
+    {
+      "confidence": 99.8828125,
+      "text": "0107011"
+    },
+    {
+      "confidence": 96.44384002685547,
+      "text": "A BTM < 450 KG"
+    },
+    {
+      "confidence": 98.08833312988281,
+      "text": "E BTM > 7500 KG"
+    },
+    {
+      "confidence": 98.42394256591797,
+      "text": "mZyPs9aZ"
+    },
+    {
+      "confidence": 98.26729583740234,
+      "text": "A1 BTM < 3500 KG"
+    },
+    {
+      "confidence": 96.00916290283203,
+      "text": "E1 BTM < 7500 KG"
+    },
+    {
+      "confidence": 89.83737182617188,
+      "text": "B"
+    },
+    {
+      "confidence": 98.4054183959961,
+      "text": "> 500 SP"
+    },
+    {
+      "confidence": 98.17083740234375,
+      "text": "E2 BTM < 5000 KG"
+    },
+    {
+      "confidence": 96.13520812988281,
+      "text": "B1"
+    },
+    {
+      "confidence": 89.08475494384766,
+      "text": "< 500 SP"
+    },
+    {
+      "confidence": 97.42135620117188,
+      "text": "F BTM < 5000 KG"
+    },
+    {
+      "confidence": 97.44978332519531,
+      "text": "B2"
+    },
+    {
+      "confidence": 82.59891510009766,
+      "text": "< 250 SP"
+    },
+    {
+      "confidence": 96.84188079833984,
+      "text": "G BTM < 5000 KG"
+    },
+    {
+      "confidence": 96.43370819091797,
+      "text": "C Motosikal Tiga Roda"
+    },
+    {
+      "confidence": 97.7038803100586,
+      "text": "H BTM > 5000 KG"
+    },
+    {
+      "confidence": 74.07585144042969,
+      "text": "all"
+    },
+    {
+      "confidence": 96.88481903076172,
+      "text": "D BTM 3500 KG"
+    },
+    {
+      "confidence": 58.32509231567383,
+      "text": "1"
+    },
+    {
+      "confidence": 98.40581512451172,
+      "text": "BTM > 5000 KG"
+    },
+    {
+      "confidence": 94.70186614990234,
+      "text": "DA BTM < 3500 KG"
+    },
+    {
+      "confidence": 34.21656036376953,
+      "text": "Mahkamah"
+    },
+    {
+      "confidence": 66.52762603759766,
+      "text": "Katua Pengarah Penganglutan Jalan"
+    }
+  ]
+}

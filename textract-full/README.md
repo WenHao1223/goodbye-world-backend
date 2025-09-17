@@ -47,17 +47,30 @@ python cli.py --file media/blur.jpg --mode t --region us-east-1 --profile greata
 uv run python api.py --host 0.0.0.0 --port 5000
 ```
 
-### API Examples
+## API Usage
+
+Start the Flask API server:
+
+```bash
+uv run python api.py
+```
+
+Access web interface at `http://localhost:5000` or use curl:
 
 ```bash
 # Analyze a driving licence via API
-curl -X POST -F "file=@media/licence.jpeg" -F "mode=tfbq" -F "category=licence" -F "region=us-east-1" -F "profile=greataihackathon-personal" http://localhost:5000/analyze
+curl -X POST -F "file=@media/licence.jpeg" \
+     -F "mode=tfbq" -F "category=licence" -F "region=us-east-1" \
+     -F "aws_access_key_id=YOUR_ACCESS_KEY" \
+     -F "aws_secret_access_key=YOUR_SECRET_KEY" \
+     http://localhost:5000/analyze
 
 # Analyze a receipt via API
-curl -X POST -F "file=@media/receipt.pdf" -F "mode=tf" -F "category=receipt" -F "region=us-east-1" -F "profile=greataihackathon-personal" http://localhost:5000/analyze
-
-# Just text extraction via API
-curl -X POST -F "file=@media/blur.jpg" -F "mode=t" -F "region=us-east-1" http://localhost:5000/analyze
+curl -X POST -F "file=@media/receipt.pdf" \
+     -F "mode=tf" -F "category=receipt" -F "region=us-east-1" \
+     -F "aws_access_key_id=YOUR_ACCESS_KEY" \
+     -F "aws_secret_access_key=YOUR_SECRET_KEY" \
+     http://localhost:5000/analyze
 ```
 
 ## Features
