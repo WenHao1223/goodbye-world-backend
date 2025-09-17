@@ -65,7 +65,7 @@ def extract_fields(textract_log: str, category: Literal["licence", "receipt", "i
     return {}
 
 def run_bedrock_extraction(textract_log: str, category: str, region: str, profile: str, filename: str, timestamp: str):
-    from .textract_enhanced import log_print
+    from .logger import log_print
     
     log_print("\n=== BEDROCK EXTRACTION ===")
     extracted = extract_fields(textract_log, category, region, profile)

@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-from .textract_enhanced import run_textract, log_print
+from .textract_enhanced import run_textract
+from .logger import log_print
 from .bedrock_mapper import run_bedrock_extraction
 from .blur_detection import run_blur_detection
 
@@ -45,10 +46,9 @@ def main():
         
         # Step 3: Run Bedrock Extraction (if category is provided)
         if args.category:
-            # Read the textract log for bedrock processing
-            textract_log_file = log_subdir / "textract.log"
-            with open(textract_log_file, "r", encoding="utf-8") as f:
-                textract_log = f.read()
+            # Use current log content for bedrock processing
+            from .logger import log_output
+            textract_log = log_output.getvalue()
             
             extracted_data, output_file = run_bedrock_extraction(
                 textract_log, args.category, args.region, args.profile, args.file.stem, timestamp
@@ -64,6 +64,11 @@ def main():
             log_print("[WARN] Image appears to be blurry - results may be less accurate")
         else:
             log_print("[INFO] Image quality appears good")
+        
+        # Save complete log
+        from .logger import log_output
+        with open(log_subdir / "textract.log", "w") as f:
+            f.write(log_output.getvalue())
             
     except Exception as e:
         log_print(f"[ERROR] Processing failed: {e}")

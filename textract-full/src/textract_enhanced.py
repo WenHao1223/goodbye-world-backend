@@ -6,17 +6,11 @@ textract_enhanced.py — Run Amazon Textract locally with both text detection an
 import json
 from pathlib import Path
 from collections import defaultdict
-from io import StringIO
 from typing import Literal
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
-
-# Capture terminal output
-log_output = StringIO()
-def log_print(msg):
-    print(msg)
-    log_output.write(msg + "\n")
+from .logger import log_print
 
 def get_kv_map(client, file_bytes):
     response = client.analyze_document(
@@ -243,9 +237,5 @@ def run_textract(file_path: Path, mode: str, category: str, region: str, profile
         results['queries'] = queries
         with open(log_subdir / "queries.json", "w") as f:
             json.dump(queries, f, indent=2)
-    
-    # Save log
-    with open(log_subdir / "textract.log", "w") as f:
-        f.write(log_output.getvalue())
     
     return results, log_subdir

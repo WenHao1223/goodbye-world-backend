@@ -88,7 +88,7 @@ class BlurDetector:
         return results
 
 def run_blur_detection(image_path: str, textract_results: List[Dict] = None):
-    from .textract_enhanced import log_print
+    from .logger import log_print
     
     detector = BlurDetector()
     blur_analysis = detector.comprehensive_blur_check(image_path, textract_results)
