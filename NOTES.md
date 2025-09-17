@@ -51,3 +51,7 @@ python aws-bedrock/bedrock-mapper.py --files log/licence_20250916_231316/text.js
 python aws-bedrock/bedrock-mapper.py --files log/licence_20250917_001133/textract.log --category licence --region us-east-1 --profile greataihackathon-personal
 python aws-bedrock/bedrock-mapper.py --files log/mingjia-licence_20250917_001506/textract.log --category licence --region us-east-1 --profile greataihackathon-personal
 ```
+
+# Final
+Refer to `README.md` in `textract-full` folder for combined CLI tool.
+[# Textract Full](textract-full/README.md)
