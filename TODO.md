@@ -32,3 +32,4 @@
  5. Payment intent endpoint + WhatsApp pay CTA + webhook handler.
  6. Consent & audit logging, encryption, retention, masking.
  7. Fallback flows & manual review tooling.
+ 8. Check if document being uploaded is blurry

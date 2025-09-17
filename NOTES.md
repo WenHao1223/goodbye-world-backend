@@ -26,7 +26,18 @@ python aws-textract/textract_local.py --image aws-textract/files/paystub.jpg --r
 ```bash
 python aws-textract/textract_enhanced_local.py --file aws-textract/files/licence.jpeg --mode tfbq --category licence --region us-east-1 --profile greataihackathon-personal 
 python aws-textract/textract_enhanced_local.py --file aws-textract/files/mingjia-licence.jpg --mode tf --region us-east-1 --profile greataihackathon-personal
+python aws-textract/textract_enhanced_local.py --file aws-textract/files/blur.jpg --mode tf --region us-east-1 --profile greataihackathon-personal
 python aws-textract/textract_enhanced_local.py --file aws-textract/files/bank-receipt.pdf --mode tfbq --category receipt --region us-east-1 --profile greataihackathon-personal
+```
+
+## Check if image is blurry
+```bash
+python blur-detection/analyze_current_results.py
+```
+
+```bash
+python blur-detection/analyze_blur.py --file log/blur_20250917_152542/textract.log
+python blur-detection/analyze_blur.py --file log/bank-receipt_20250917_013838/textract.log
 ```
 
 ## Check Bedrock Model Available
