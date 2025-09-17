@@ -61,6 +61,18 @@ class BlurDetector:
         low_conf_count = sum(1 for c in confidences if c < self.confidence_threshold)
         low_conf_percentage = (low_conf_count / len(confidences)) * 100
         
+        # Optimized blur detection logic
+        likely_blurry = (
+            # Very low median confidence (most text unreadable)
+            median_conf < 80.0 or
+            # Very low average confidence (overall poor quality)
+            avg_conf < 75.0 or
+            # High percentage of very low confidence items (>50% below 85%)
+            low_conf_percentage > 50.0 or
+            # Extremely high standard deviation with low median (inconsistent + poor)
+            (std_conf > 20.0 and median_conf < 85.0)
+        )
+
         return {
             'total_items': len(confidences),
             'min_confidence': min_conf,
@@ -70,19 +82,19 @@ class BlurDetector:
             'std_confidence': std_conf,
             'low_confidence_count': low_conf_count,
             'low_confidence_percentage': low_conf_percentage,
-            'likely_blurry': median_conf < 85 and avg_conf < 90,
+            'likely_blurry': likely_blurry,
             'quality_assessment': self._assess_quality_from_confidence(median_conf, avg_conf, std_conf)
         }
     
     def _assess_quality_from_confidence(self, median_conf: float, avg_conf: float, std_conf: float) -> str:
         """Assess image quality based on median, average, and standard deviation"""
-        # High std indicates inconsistent quality (some very low confidence items)
-        if median_conf > 98 and avg_conf > 95 and std_conf < 10:
+        # Calculate low confidence percentage for better assessment
+        if median_conf > 95.0 and avg_conf > 90.0:
             return 'excellent'
-        elif median_conf > 95 and avg_conf > 90 and std_conf < 15:
+        elif median_conf > 90.0 and avg_conf > 85.0:
             return 'good'
-        elif median_conf > 90 and avg_conf > 85 and std_conf < 20:
-            return 'moderate'
+        elif median_conf > 85.0 and avg_conf > 80.0:
+            return 'fair'
         else:
             return 'poor'
     
@@ -166,20 +178,32 @@ def run_blur_detection(image_path: str, textract_results: List[Dict] = None):
                 variance = sum((x - avg_confidence) ** 2 for x in confidences) / len(confidences)
                 std_confidence = variance ** 0.5
 
-                # Enhanced heuristic based on confidence and standard deviation
-                # High std indicates inconsistent OCR quality (often due to blur)
-                is_blurry = (avg_confidence < 95.0 or
-                           median_confidence < 90.0 or
-                           std_confidence > 5.0)
+                # Optimized blur detection algorithm
+                # Focus on median confidence (more robust) and low confidence percentage
+                low_confidence_threshold = 85.0  # Lowered from 90.0
+                low_confidence_count = sum(1 for c in confidences if c < low_confidence_threshold)
+                low_confidence_percentage = (low_confidence_count / len(confidences)) * 100
 
-                # Determine confidence level based on multiple factors
-                if avg_confidence > 98.0 and median_confidence > 95.0 and std_confidence < 2.0:
+                # More sophisticated blur detection
+                is_blurry = (
+                    # Very low median confidence (most text unreadable)
+                    median_confidence < 80.0 or
+                    # Very low average confidence (overall poor quality)
+                    avg_confidence < 75.0 or
+                    # High percentage of very low confidence items (>50% below 85%)
+                    low_confidence_percentage > 50.0 or
+                    # Extremely high standard deviation with low median (inconsistent + poor)
+                    (std_confidence > 20.0 and median_confidence < 85.0)
+                )
+
+                # Determine confidence level and quality assessment
+                if median_confidence > 95.0 and avg_confidence > 90.0 and low_confidence_percentage < 20.0:
                     confidence_level = "high"
                     quality_assessment = "excellent"
-                elif avg_confidence > 95.0 and median_confidence > 90.0 and std_confidence < 5.0:
-                    confidence_level = "medium"
+                elif median_confidence > 90.0 and avg_confidence > 85.0 and low_confidence_percentage < 35.0:
+                    confidence_level = "high"
                     quality_assessment = "good"
-                elif avg_confidence > 90.0 and median_confidence > 85.0:
+                elif median_confidence > 85.0 and avg_confidence > 80.0 and low_confidence_percentage < 50.0:
                     confidence_level = "medium"
                     quality_assessment = "fair"
                 else:
@@ -193,34 +217,32 @@ def run_blur_detection(image_path: str, textract_results: List[Dict] = None):
                 # Calculate additional Textract analysis metrics to match local version
                 min_confidence = min(confidences)
                 max_confidence = max(confidences)
-                low_confidence_threshold = 90.0
-                low_confidence_count = sum(1 for c in confidences if c < low_confidence_threshold)
-                low_confidence_percentage = (low_confidence_count / len(confidences)) * 100
+                # Use the same threshold as in the blur detection logic
                 likely_blurry = is_blurry
 
                 return {
                     'laplacian': {
                         'method': 'laplacian',
-                        'score': 150.0,  # Default score when OpenCV not available
-                        'is_blurry': False,  # Assume not blurry from Laplacian perspective
-                        'quality': 'good'
+                        'score': 150.0,  # Default score when OpenCV not available # 0.0+
+                        'is_blurry': False,  # Assume not blurry from Laplacian perspective # boolean
+                        'quality': 'good' # sharp, moderate, blurry
                     },
                     'textract_analysis': {
                         'total_items': len(confidences),
-                        'min_confidence': min_confidence,
-                        'max_confidence': max_confidence,
-                        'median_confidence': median_confidence,
-                        'average_confidence': avg_confidence,
-                        'std_confidence': std_confidence,
-                        'low_confidence_count': low_confidence_count,
-                        'low_confidence_percentage': low_confidence_percentage,
-                        'likely_blurry': likely_blurry,
-                        'quality_assessment': quality_assessment
+                        'min_confidence': min_confidence, # 0.0 - 100.0
+                        'max_confidence': max_confidence, # 0.0 - 100.0
+                        'median_confidence': median_confidence, # 0.0 - 100.0
+                        'average_confidence': avg_confidence, # 0.0 - 100.0
+                        'std_confidence': std_confidence, # 0.0+
+                        'low_confidence_count': low_confidence_count, # int
+                        'low_confidence_percentage': low_confidence_percentage, # 0.0 - 100.0
+                        'likely_blurry': likely_blurry, # boolean
+                        'quality_assessment': quality_assessment # excellent, good, fair, poor
                     },
                     'overall_assessment': {
-                        'is_blurry': is_blurry,
-                        'blur_indicators': ['textract'] if is_blurry else [],
-                        'confidence_level': confidence_level
+                        'is_blurry': is_blurry, # boolean
+                        'blur_indicators': ['textract'] if is_blurry else [], # Shows which detection methods identified the image as blurry, array that can contain "textract", "laplacian"
+                        'confidence_level': confidence_level # high, medium, low
                     }
                 }
 
