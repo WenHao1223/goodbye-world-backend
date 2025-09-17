@@ -22,7 +22,7 @@ def main():
                         choices=["licence", "receipt", "idcard", "passport"],
                         help="Document category for queries and extraction")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region")
-    parser.add_argument("--profile", required=False, default=None, help="AWS profile name")
+    parser.add_argument("--profile", required=True, default=None, help="AWS profile name")
     
     args = parser.parse_args()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
