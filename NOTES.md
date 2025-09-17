@@ -42,7 +42,7 @@ python blur-detection/analyze_blur.py --file log/bank-receipt_20250917_013838/te
 
 ## Check Bedrock Model Available
 ```bash
-python check-bedrock-models.py --region us-east-1 --profile greataihackathon-personal
+python aws-bedrock/check-bedrock-models.py --region us-east-1 --profile greataihackathon-personal
 ```
 
 ## Mapper
