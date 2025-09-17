@@ -1,6 +1,0 @@
-[INFO] Using file: C:\Users\wenhao\AppData\Local\Temp\tmpgm_avdhj.pdf
-[INFO] Using mode: tf
-[INFO] Document category: receipt
-[INFO] Using region: us-east-1
-[INFO] Using profile: default
-[ERROR] Processing failed: No module named 'PyPDF2'
