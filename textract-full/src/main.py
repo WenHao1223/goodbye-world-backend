@@ -40,9 +40,12 @@ def main():
             args.file, args.mode, args.category, args.region, args.profile, timestamp
         )
         
-        # Step 2: Run Blur Detection
-        text_data = textract_results.get('text', [])
-        blur_results = run_blur_detection(str(args.file), text_data)
+        # Step 2: Run Blur Detection (only if text mode is enabled)
+        if 't' in args.mode:
+            text_data = textract_results.get('text', [])
+            blur_results = run_blur_detection(str(args.file), text_data)
+        else:
+            blur_results = {'overall_assessment': {'is_blurry': False}}
         
         # Step 3: Run Bedrock Extraction (if category is provided)
         if args.category:
@@ -70,8 +73,26 @@ def main():
         with open(log_subdir / "textract.log", "w") as f:
             f.write(log_output.getvalue())
             
+    except SystemExit:
+        # Save log on SystemExit
+        from .logger import log_output
+        file_name = args.file.stem
+        log_subdir = Path("log") / f"{file_name}_{timestamp}"
+        log_subdir.mkdir(parents=True, exist_ok=True)
+        with open(log_subdir / "textract.log", "w") as f:
+            f.write(log_output.getvalue())
+        raise
     except Exception as e:
         log_print(f"[ERROR] Processing failed: {e}")
+        
+        # Save log even on error
+        from .logger import log_output
+        file_name = args.file.stem
+        log_subdir = Path("log") / f"{file_name}_{timestamp}"
+        log_subdir.mkdir(parents=True, exist_ok=True)
+        with open(log_subdir / "textract.log", "w") as f:
+            f.write(log_output.getvalue())
+        
         sys.exit(1)
 
 if __name__ == "__main__":
