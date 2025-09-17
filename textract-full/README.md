@@ -152,6 +152,7 @@ curl https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/health
 - **Lambda**: Enhanced Textract confidence analysis with statistical metrics
 - **Metrics**: Average, median, and standard deviation of OCR confidence
 - **Quality Assessment**: Excellent, good, fair, or poor ratings
+- **API Integration**: Structured `blur_analysis` field in Lambda responses
 
 ### 3. **AWS Bedrock Integration**
 - **Structured Extraction**: Convert documents to structured JSON
@@ -257,6 +258,45 @@ uv run python cli.py --file media/idcard.jpg --mode tfbq --category idcard
 uv run python cli.py --file media/passport.jpg --mode tfbq --category passport
 ```
 
+## 📊 Blur Analysis API Field
+
+The Lambda API now includes a dedicated `blur_analysis` field that provides comprehensive image quality assessment:
+
+```json
+{
+  "blur_analysis": {
+    "textract_analysis": {
+      "median_confidence": 99.89,
+      "average_confidence": 99.62,
+      "std_confidence": 0.51,
+      "quality_assessment": "excellent"
+    },
+    "overall_assessment": {
+      "is_blurry": false,
+      "confidence_level": "high"
+    }
+  }
+}
+```
+
+### Blur Analysis Metrics
+
+| Field | Description | Values |
+|-------|-------------|---------|
+| `median_confidence` | Median OCR confidence score | 0-100 |
+| `average_confidence` | Average OCR confidence score | 0-100 |
+| `std_confidence` | Standard deviation of confidence scores | 0+ |
+| `quality_assessment` | Overall image quality rating | excellent, good, fair, poor |
+| `is_blurry` | Boolean blur detection result | true, false |
+| `confidence_level` | Assessment confidence level | high, medium, low |
+
+### Quality Assessment Criteria
+
+- **Excellent**: Avg > 98%, Median > 95%, Std < 2.0
+- **Good**: Avg > 95%, Median > 90%, Std < 5.0
+- **Fair**: Avg > 90%, Median > 85%
+- **Poor**: Below fair thresholds
+
 ## 📚 API Reference
 
 ### Local CLI Response
@@ -305,6 +345,18 @@ Overall: CLEAR (confidence: high)
   },
   "queries": {
     "What is the amount?": "$100.00"
+  },
+  "blur_analysis": {
+    "textract_analysis": {
+      "median_confidence": 99.89,
+      "average_confidence": 99.62,
+      "std_confidence": 0.51,
+      "quality_assessment": "excellent"
+    },
+    "overall_assessment": {
+      "is_blurry": false,
+      "confidence_level": "high"
+    }
   },
   "extracted_data": {
     "transaction_date": "2025-09-15",
@@ -411,7 +463,7 @@ aws logs describe-log-groups --log-group-name-prefix /aws/lambda/textract-full-a
 | **Scaling** | Single instance | Auto-scaling |
 | **File Upload** | Direct file path | Base64 in JSON |
 | **AWS Credentials** | Local AWS config | IAM role |
-| **Blur Detection** | Full OpenCV analysis | Textract confidence analysis |
+| **Blur Detection** | Full OpenCV analysis | Textract confidence analysis + API field |
 | **Timeout** | No limit | 5 minutes |
 | **File Size** | AWS service limits | 6 MB request limit |
 | **Cost** | Compute + AWS services | Lambda + AWS services |

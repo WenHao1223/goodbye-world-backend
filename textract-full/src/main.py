@@ -6,6 +6,7 @@ Textract Full - Combined CLI for Textract, Bedrock, and Blur Detection
 import argparse
 import sys
 import os
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -28,6 +29,10 @@ def main():
     args = parser.parse_args()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
+    # category is required for query mode
+    if 'q' in args.mode and not args.category:
+        raise SystemExit("[ERROR] Category is required for query mode")
+
     # Print parsed arguments
     log_print(f"[INFO] Using file: {args.file}")
     log_print(f"[INFO] Using mode: {args.mode}")
@@ -41,12 +46,36 @@ def main():
             args.file, args.mode, args.category, args.region, args.profile, timestamp
         )
         
+        # Helper function to ensure JSON serialization
+        def make_json_serializable(obj):
+            if isinstance(obj, dict):
+                return {k: make_json_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [make_json_serializable(item) for item in obj]
+            elif isinstance(obj, bool):
+                return bool(obj)  # Explicitly convert to JSON bool
+            elif isinstance(obj, (int, float, str, type(None))):
+                return obj
+            else:
+                return str(obj)  # Convert other types to string
+
         # Step 2: Run Blur Detection (only if text mode is enabled)
         if 't' in args.mode:
             text_data = textract_results.get('text', [])
             blur_results = run_blur_detection(str(args.file), text_data)
+
+            # Save blur analysis results to JSON file
+            json_safe_results = make_json_serializable(blur_results)
+            blur_file = log_subdir / "blur_analysis.json"
+            with open(blur_file, 'w') as f:
+                json.dump(json_safe_results, f, indent=2)
         else:
             blur_results = {'overall_assessment': {'is_blurry': False}}
+            # Save empty blur analysis for consistency
+            json_safe_results = make_json_serializable(blur_results)
+            blur_file = log_subdir / "blur_analysis.json"
+            with open(blur_file, 'w') as f:
+                json.dump(json_safe_results, f, indent=2)
         
         # Step 3: Run Bedrock Extraction (if category is provided)
         if args.category:

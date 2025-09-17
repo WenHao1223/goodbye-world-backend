@@ -148,11 +148,14 @@ def lambda_handler(event, context):
                 latest_log = max(log_dir.glob('*'), key=os.path.getctime)
                 
                 # Read JSON files
-                for json_file in ['text.json', 'forms.json', 'tables.json', 'queries.json']:
+                for json_file in ['text.json', 'forms.json', 'tables.json', 'queries.json', 'blur_analysis.json']:
                     file_path = latest_log / json_file
                     if file_path.exists():
                         with open(file_path) as f:
-                            response[json_file.replace('.json', '')] = json.load(f)
+                            if json_file == 'blur_analysis.json':
+                                response['blur_analysis'] = json.load(f)
+                            else:
+                                response[json_file.replace('.json', '')] = json.load(f)
             
             # Find latest output file
             output_dir = Path('/tmp/output')  # Use /tmp in Lambda

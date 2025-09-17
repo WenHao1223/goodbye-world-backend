@@ -73,6 +73,16 @@ GET /health - Health check
 }
 ```
 
+### Response Fields
+- `status` - Success/error status
+- `console_output` - Full processing log
+- `text` - Text detection with confidence scores
+- `forms` - Form analysis (key-value pairs)
+- `tables` - Table analysis with structured data
+- `queries` - Query analysis results
+- `blur_analysis` - **NEW!** Blur detection metrics
+- `extracted_data` - Bedrock AI extraction results
+
 ## 📁 Output Locations
 
 ### Local
@@ -223,6 +233,18 @@ Overall: CLEAR (confidence: high)
 {
   "status": "success",
   "text": [{"text": "Sample", "confidence": 99.89}],
+  "blur_analysis": {
+    "textract_analysis": {
+      "median_confidence": 99.89,
+      "average_confidence": 99.62,
+      "std_confidence": 0.51,
+      "quality_assessment": "excellent"
+    },
+    "overall_assessment": {
+      "is_blurry": false,
+      "confidence_level": "high"
+    }
+  },
   "extracted_data": {"amount": "$100.00"}
 }
 ```

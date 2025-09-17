@@ -141,6 +141,14 @@ reader.onload = async function(e) {
   
   const result = await response.json();
   console.log(result);
+
+  // Access blur analysis
+  if (result.blur_analysis) {
+    const blurInfo = result.blur_analysis;
+    console.log(`Quality: ${blurInfo.textract_analysis.quality_assessment}`);
+    console.log(`Is Blurry: ${blurInfo.overall_assessment.is_blurry}`);
+    console.log(`Confidence: ${blurInfo.overall_assessment.confidence_level}`);
+  }
 };
 
 reader.readAsDataURL(file);
@@ -169,6 +177,13 @@ response = requests.post(
 
 result = response.json()
 print(result)
+
+# Access blur analysis
+if 'blur_analysis' in result:
+    blur_info = result['blur_analysis']
+    print(f"Quality: {blur_info['textract_analysis']['quality_assessment']}")
+    print(f"Is Blurry: {blur_info['overall_assessment']['is_blurry']}")
+    print(f"Confidence: {blur_info['overall_assessment']['confidence_level']}")
 ```
 
 ### cURL
@@ -296,6 +311,22 @@ Overall: CLEAR (confidence: high)
   "transaction_date": "2025-09-15",
   "transaction_amount": "RM 100.00",
   "beneficiary_name": "DELLAND PROPERTY MANAGEMENT SDN BHD"
+}
+```
+
+**log/receipt_20250917_143545/blur_analysis.json**
+```json
+{
+  "textract_analysis": {
+    "median_confidence": 99.89,
+    "average_confidence": 99.62,
+    "std_confidence": 0.51,
+    "quality_assessment": "excellent"
+  },
+  "overall_assessment": {
+    "is_blurry": false,
+    "confidence_level": "high"
+  }
 }
 ```
 

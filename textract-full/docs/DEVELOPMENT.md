@@ -61,6 +61,9 @@ uv run python local_test.py --health
 # Test with different files
 SET LAMBDA_RUNTIME=true
 uv run python cli.py --file media/receipt.pdf --mode t
+
+## Remove LAMBDA_RUNTIME if testing locally
+SET LAMBDA_RUNTIME=
 ```
 
 ### API Testing
@@ -98,6 +101,7 @@ uv run python test_lambda.py --create-html
 - Image quality assessment
 - OpenCV integration (local)
 - Textract confidence analysis (Lambda)
+- Structured blur analysis output (JSON)
 
 #### `src/logger.py`
 - Logging utilities
@@ -315,7 +319,15 @@ python -m pytest tests/
 uv run python cli.py --file media/test_document.pdf --mode new_mode
 
 # Test Lambda integration
-LAMBDA_RUNTIME=true uv run python cli.py --file media/test_document.pdf --mode new_mode
+SET LAMBDA_RUNTIME=true
+uv run python cli.py --file media/test_document.pdf --mode new_mode
+
+## Remove LAMBDA_RUNTIME if testing locally
+SET LAMBDA_RUNTIME=
+
+# Test blur analysis specifically
+uv run python cli.py --file media/clear_document.pdf --mode t
+uv run python cli.py --file media/blurry_document.jpg --mode t
 ```
 
 ### Performance Testing

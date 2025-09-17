@@ -190,15 +190,36 @@ def run_blur_detection(image_path: str, textract_results: List[Dict] = None):
                 log_print(f"Quality assessment: {quality_assessment}")
                 log_print(f"Overall: {'BLURRY' if is_blurry else 'CLEAR'} (confidence: {confidence_level})")
 
+                # Calculate additional Textract analysis metrics to match local version
+                min_confidence = min(confidences)
+                max_confidence = max(confidences)
+                low_confidence_threshold = 90.0
+                low_confidence_count = sum(1 for c in confidences if c < low_confidence_threshold)
+                low_confidence_percentage = (low_confidence_count / len(confidences)) * 100
+                likely_blurry = is_blurry
+
                 return {
+                    'laplacian': {
+                        'method': 'laplacian',
+                        'score': 150.0,  # Default score when OpenCV not available
+                        'is_blurry': False,  # Assume not blurry from Laplacian perspective
+                        'quality': 'good'
+                    },
                     'textract_analysis': {
+                        'total_items': len(confidences),
+                        'min_confidence': min_confidence,
+                        'max_confidence': max_confidence,
                         'median_confidence': median_confidence,
                         'average_confidence': avg_confidence,
                         'std_confidence': std_confidence,
+                        'low_confidence_count': low_confidence_count,
+                        'low_confidence_percentage': low_confidence_percentage,
+                        'likely_blurry': likely_blurry,
                         'quality_assessment': quality_assessment
                     },
                     'overall_assessment': {
                         'is_blurry': is_blurry,
+                        'blur_indicators': ['textract'] if is_blurry else [],
                         'confidence_level': confidence_level
                     }
                 }
@@ -206,8 +227,27 @@ def run_blur_detection(image_path: str, textract_results: List[Dict] = None):
         # Default fallback
         log_print("No Textract results available - assuming good quality")
         return {
+            'laplacian': {
+                'method': 'laplacian',
+                'score': 150.0,  # Default score when OpenCV not available
+                'is_blurry': False,
+                'quality': 'good'
+            },
+            'textract_analysis': {
+                'total_items': 0,
+                'min_confidence': 0,
+                'max_confidence': 0,
+                'median_confidence': 0,
+                'average_confidence': 0,
+                'std_confidence': 0,
+                'low_confidence_count': 0,
+                'low_confidence_percentage': 0,
+                'likely_blurry': False,
+                'quality_assessment': 'unknown'
+            },
             'overall_assessment': {
                 'is_blurry': False,
+                'blur_indicators': [],
                 'confidence_level': 'low'
             }
         }
