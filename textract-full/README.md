@@ -197,7 +197,7 @@ textract-full/
 ├── deploy_lambda.py              # Deployment script
 ├── serverless.yml                # Serverless Framework config
 ├── pyproject.toml                # Project dependencies
-├── requirements-lambda.txt       # Lambda-specific dependencies
+├── requirements.txt       # Lambda-specific dependencies
 └── README.md                     # This file
 ```
 

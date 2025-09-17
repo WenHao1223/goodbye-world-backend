@@ -59,7 +59,8 @@ uv run python local_test.py
 uv run python local_test.py --health
 
 # Test with different files
-LAMBDA_RUNTIME=true uv run python cli.py --file media/receipt.pdf --mode t
+SET LAMBDA_RUNTIME=true
+uv run python cli.py --file media/receipt.pdf --mode t
 ```
 
 ### API Testing
@@ -129,7 +130,7 @@ uv run python test_lambda.py --create-html
 - AWS Lambda settings
 - API Gateway configuration
 
-### `requirements-lambda.txt`
+### `requirements.txt`
 - Lambda-specific dependencies
 - Optimized for serverless deployment
 

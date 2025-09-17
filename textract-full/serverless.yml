@@ -86,7 +86,7 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
-    fileName: requirements-lambda.txt
+    fileName: requirements.txt
     slim: true
     strip: false
     useStaticCache: false
