@@ -4,9 +4,10 @@ textract_enhanced.py — Run Amazon Textract locally with both text detection an
 """
 
 import json
+import os
 from pathlib import Path
 from collections import defaultdict
-from typing import Literal
+from typing import Literal, Optional, Union
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -63,7 +64,7 @@ def get_text(result, blocks_map):
                             text += 'X'
     return text
 
-def detect_document_text(file_path: Path, region: str, profile: str | None = None):
+def detect_document_text(file_path: Path, region: str, profile: Optional[str] = None):
     session_kwargs = {}
     if profile:
         session_kwargs["profile_name"] = profile
@@ -179,9 +180,12 @@ def run_textract(file_path: Path, mode: str, category: str, region: str, profile
 
     resp, client, file_bytes = detect_document_text(file_path, region, profile)
     
-    # Create log subdirectory
+    # Create log subdirectory (use /tmp in Lambda environment)
     file_name = file_path.stem
-    log_subdir = Path("log") / f"{file_name}_{timestamp}"
+    if os.environ.get('LAMBDA_RUNTIME'):
+        log_subdir = Path("/tmp/log") / f"{file_name}_{timestamp}"
+    else:
+        log_subdir = Path("log") / f"{file_name}_{timestamp}"
     log_subdir.mkdir(parents=True, exist_ok=True)
 
     results = {}

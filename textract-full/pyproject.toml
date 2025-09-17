@@ -9,7 +9,7 @@ dependencies = [
     "opencv-python",
     "numpy",
     "PyPDF2",
-    "flask",
+    "requests", # For testing
 ]
 
 [build-system]

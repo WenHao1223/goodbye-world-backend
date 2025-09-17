@@ -1,0 +1,93 @@
+service: textract-full-api
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: python3.10
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  timeout: 300  # 5 minutes
+  memorySize: 1024
+  
+  environment:
+    LAMBDA_RUNTIME: true
+    PYTHONPATH: /var/task
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - textract:DetectDocumentText
+            - textract:AnalyzeDocument
+            - bedrock:InvokeModel
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "arn:aws:logs:*:*:*"
+
+functions:
+  analyze:
+    handler: lambda_handler.lambda_handler
+    events:
+      - http:
+          path: analyze
+          method: post
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
+  
+  health:
+    handler: lambda_handler.health_handler
+    events:
+      - http:
+          path: health
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+            allowCredentials: false
+
+package:
+  patterns:
+    - '!.git/**'
+    - '!.venv/**'
+    - '!__pycache__/**'
+    - '!*.pyc'
+    - '!.pytest_cache/**'
+    - '!tests/**'
+    - '!media/**'
+    - '!log/**'
+    - '!output/**'
+    - '!api.py'
+    - '!test_api.html'
+    - '!deploy_lambda.py'
+    - '!README.md'
+    - '!uv.lock'
+    - 'lambda_handler.py'
+    - 'cli.py'
+    - 'src/**'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: false
+    fileName: requirements-lambda.txt
+    slim: true
+    strip: false
+    useStaticCache: false
+    useDownloadCache: false

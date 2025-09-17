@@ -1,15 +1,19 @@
 .git/
 .idea/
 
+# Node.js
+node_modules/
+package-lock.json
+
+# AWS Lambda
+.serverless/
+
+# Python
 .venv/
 .vscode/
 .pytest_cache/
 __pycache__/
-.ipynb_checkpoints
-
-aws-texttract/__pycache__/
-aws-texttract/.pytest_cache/
-aws-texttract/.venv/
+.ipynb_checkpoints/
 
 # Environment files
 .env

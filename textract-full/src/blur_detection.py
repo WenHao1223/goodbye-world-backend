@@ -1,7 +1,15 @@
-import cv2
-import numpy as np
+try:
+    import cv2
+    import numpy as np
+    OPENCV_AVAILABLE = True
+except ImportError:
+    OPENCV_AVAILABLE = False
+    cv2 = None
+    np = None
+
 from typing import Dict, List
 import json
+import os
 
 class BlurDetector:
     def __init__(self):
@@ -10,9 +18,17 @@ class BlurDetector:
         
     def detect_blur_laplacian(self, image_path: str) -> Dict:
         """Detect blur using Laplacian variance method"""
+        if not OPENCV_AVAILABLE:
+            return {
+                'method': 'laplacian',
+                'score': 150.0,  # Assume good quality
+                'is_blurry': False,
+                'quality': 'good'
+            }
+
         image = cv2.imread(image_path)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        
+
         # Calculate Laplacian variance
         laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
         
@@ -133,23 +149,86 @@ class BlurDetector:
 
 def run_blur_detection(image_path: str, textract_results: List[Dict] = None):
     from .logger import log_print
-    
+
+    # Check if OpenCV is available
+    if not OPENCV_AVAILABLE:
+        log_print("\n=== BLUR DETECTION ===")
+        log_print("OpenCV not available - using Textract confidence analysis only")
+
+        # Fallback to Textract confidence analysis only
+        if textract_results:
+            confidences = [item.get('confidence', 0) for item in textract_results]
+            if confidences:
+                avg_confidence = sum(confidences) / len(confidences)
+                median_confidence = sorted(confidences)[len(confidences) // 2]
+
+                # Calculate standard deviation
+                variance = sum((x - avg_confidence) ** 2 for x in confidences) / len(confidences)
+                std_confidence = variance ** 0.5
+
+                # Enhanced heuristic based on confidence and standard deviation
+                # High std indicates inconsistent OCR quality (often due to blur)
+                is_blurry = (avg_confidence < 95.0 or
+                           median_confidence < 90.0 or
+                           std_confidence > 5.0)
+
+                # Determine confidence level based on multiple factors
+                if avg_confidence > 98.0 and median_confidence > 95.0 and std_confidence < 2.0:
+                    confidence_level = "high"
+                    quality_assessment = "excellent"
+                elif avg_confidence > 95.0 and median_confidence > 90.0 and std_confidence < 5.0:
+                    confidence_level = "medium"
+                    quality_assessment = "good"
+                elif avg_confidence > 90.0 and median_confidence > 85.0:
+                    confidence_level = "medium"
+                    quality_assessment = "fair"
+                else:
+                    confidence_level = "low"
+                    quality_assessment = "poor"
+
+                log_print(f"Textract confidence - Median: {median_confidence:.2f}, Avg: {avg_confidence:.2f}, Std: {std_confidence:.2f}")
+                log_print(f"Quality assessment: {quality_assessment}")
+                log_print(f"Overall: {'BLURRY' if is_blurry else 'CLEAR'} (confidence: {confidence_level})")
+
+                return {
+                    'textract_analysis': {
+                        'median_confidence': median_confidence,
+                        'average_confidence': avg_confidence,
+                        'std_confidence': std_confidence,
+                        'quality_assessment': quality_assessment
+                    },
+                    'overall_assessment': {
+                        'is_blurry': is_blurry,
+                        'confidence_level': confidence_level
+                    }
+                }
+
+        # Default fallback
+        log_print("No Textract results available - assuming good quality")
+        return {
+            'overall_assessment': {
+                'is_blurry': False,
+                'confidence_level': 'low'
+            }
+        }
+
+    # Full blur detection with OpenCV
     detector = BlurDetector()
     blur_analysis = detector.comprehensive_blur_check(image_path, textract_results)
-    
+
     log_print("\n=== BLUR DETECTION ===")
-    
+
     # Print results without JSON serialization
     if 'laplacian' in blur_analysis:
         lap = blur_analysis['laplacian']
         log_print(f"Laplacian score: {lap['score']:.2f} - Quality: {lap['quality']}")
-    
+
     if 'textract_analysis' in blur_analysis:
         ta = blur_analysis['textract_analysis']
         log_print(f"Textract confidence - Median: {ta['median_confidence']:.2f}, Avg: {ta['average_confidence']:.2f}, Std: {ta['std_confidence']:.2f}")
         log_print(f"Quality assessment: {ta['quality_assessment']}")
-    
+
     overall = blur_analysis['overall_assessment']
     log_print(f"Overall: {'BLURRY' if overall['is_blurry'] else 'CLEAR'} (confidence: {overall['confidence_level']})")
-    
+
     return blur_analysis

@@ -5,6 +5,7 @@ Textract Full - Combined CLI for Textract, Bedrock, and Blur Detection
 
 import argparse
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 

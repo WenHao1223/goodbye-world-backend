@@ -1,8 +1,9 @@
 import json
+import os
 from pathlib import Path
 from datetime import datetime
 from io import StringIO
-from typing import Literal
+from typing import Literal, Optional
 import sys
 
 import boto3
@@ -23,7 +24,7 @@ def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passpor
     else:
         sys.exit(f"[ERROR] Prompt file {prompt_path} not found.")
 
-def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: str | None = None):
+def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: Optional[str] = None):
     session_kwargs = {"region_name": region}
     if profile:
         session_kwargs["profile_name"] = profile
@@ -72,8 +73,11 @@ def run_bedrock_extraction(textract_log: str, category: str, region: str, profil
     result_json = json.dumps(extracted, indent=2, ensure_ascii=False)
     log_print(result_json)
     
-    # Create output directories
-    output_dir = Path("output")
+    # Create output directories (use /tmp in Lambda environment)
+    if os.environ.get('LAMBDA_RUNTIME'):
+        output_dir = Path("/tmp/output")
+    else:
+        output_dir = Path("output")
     output_dir.mkdir(exist_ok=True)
     
     # Save extracted data
