@@ -1,0 +1,20 @@
+Extract receipt/transaction fields from the provided data.
+
+Return STRICTLY valid JSON matching this schema:
+{
+  "transaction_date": "YYYY-MM-DD"|null,
+  "transaction_amount": string|null,
+  "beneficiary_name": string|null,
+  "beneficiary_account": string|null,
+  "reference_id": string|null,
+  "transaction_type": string|null,
+  "sending_bank": string|null,
+  "receiving_bank": string|null
+}
+
+CRITICAL RULES:
+- ONLY extract data that is EXPLICITLY present in the input
+- DO NOT make up or guess any values
+- If a field is not found, use null
+- Convert dates to YYYY-MM-DD format
+- Return only valid JSON, no explanations
