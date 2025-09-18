@@ -24,14 +24,20 @@ def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passpor
     else:
         sys.exit(f"[ERROR] Prompt file {prompt_path} not found.")
 
-def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: Optional[str] = None):
+def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: Optional[str] = None, custom_prompt: str = None):
     session_kwargs = {"region_name": region}
     if profile:
         session_kwargs["profile_name"] = profile
     
     session = boto3.Session(**session_kwargs)
     bedrock = session.client("bedrock-runtime")
-    
+
+    # Use custom prompt if provided, otherwise use category-based prompt
+    if custom_prompt:
+        system_prompt = custom_prompt
+    else:
+        system_prompt = get_system_prompt(category)
+
     payload = {
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 1000,
@@ -39,7 +45,7 @@ def extract_fields(textract_log: str, category: Literal["licence", "receipt", "i
         "messages": [
             {
                 "role": "user",
-                "content": f"{get_system_prompt(category)}\n\nExtract ONLY the data that is explicitly present in this input:\n{textract_log}"
+                "content": f"{system_prompt}\n\nExtract ONLY the data that is explicitly present in this input:\n{textract_log}"
             }
         ]
     }
@@ -65,11 +71,15 @@ def extract_fields(textract_log: str, category: Literal["licence", "receipt", "i
     
     return {}
 
-def run_bedrock_extraction(textract_log: str, category: str, region: str, profile: str, filename: str, timestamp: str):
+def run_bedrock_extraction(textract_log: str, category: str, region: str, profile: str, filename: str, timestamp: str, custom_prompt: str = None):
     from .logger import log_print
     
     log_print("\n=== BEDROCK EXTRACTION ===")
-    extracted = extract_fields(textract_log, category, region, profile)
+    if custom_prompt:
+        log_print(f"[INFO] Using custom prompt")
+    else:
+        log_print(f"[INFO] Using prompt: {Path(__file__).parent / 'prompts' / f'{category}.txt'}")
+    extracted = extract_fields(textract_log, category, region, profile, custom_prompt)
     result_json = json.dumps(extracted, indent=2, ensure_ascii=False)
     log_print(result_json)
     

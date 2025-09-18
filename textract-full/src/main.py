@@ -25,6 +25,8 @@ def main():
                         help="Document category for queries and extraction")
     parser.add_argument("--queries", required=False, default=None,
                         help="Custom queries separated by semicolons (e.g., 'What is the name?;What is the date?')")
+    parser.add_argument("--prompt", required=False, default=None,
+                        help="Custom prompt for Bedrock AI extraction (overrides category-based prompts)")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name") # False to enable env var usage
     
@@ -80,19 +82,22 @@ def main():
             with open(blur_file, 'w') as f:
                 json.dump(json_safe_results, f, indent=2)
         
-        # Step 3: Run Bedrock Extraction (if category is provided)
-        if args.category:
+        # Step 3: Run Bedrock Extraction (if category or custom prompt provided)
+        if args.category or args.prompt:
             # Use current log content for bedrock processing
             from .logger import log_output
             textract_log = log_output.getvalue()
-            
+
+            # Use a default category if only custom prompt is provided
+            category = args.category if args.category else "licence"
+
             extracted_data, output_file = run_bedrock_extraction(
-                textract_log, args.category, args.region, args.profile, args.file.stem, timestamp
+                textract_log, category, args.region, args.profile, args.file.stem, timestamp, args.prompt
             )
         
         log_print("\n=== PROCESSING COMPLETE ===")
         log_print(f"[INFO] Textract results saved to: {log_subdir}")
-        if args.category:
+        if args.category or args.prompt:
             log_print(f"[INFO] Extracted data saved to: {output_file}")
         
         # Summary

@@ -9,7 +9,7 @@ import requests
 from pathlib import Path
 
 
-def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, region="us-east-1"):
+def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, prompt=None, region="us-east-1"):
     """Test Lambda function locally"""
 
     # Import the handler
@@ -28,6 +28,7 @@ def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, regio
             "mode": mode,
             "category": category,
             "queries": queries,
+            "prompt": prompt,
             "region": region
         })
     }
@@ -41,7 +42,7 @@ def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, regio
     return result
 
 
-def test_lambda_api(api_url, file_path, mode="tfbq", category=None, queries=None, region="us-east-1"):
+def test_lambda_api(api_url, file_path, mode="tfbq", category=None, queries=None, prompt=None, region="us-east-1"):
     """Test deployed Lambda function via API Gateway"""
 
     # Read and encode file
@@ -55,6 +56,7 @@ def test_lambda_api(api_url, file_path, mode="tfbq", category=None, queries=None
         "mode": mode,
         "category": category,
         "queries": queries,
+        "prompt": prompt,
         "region": region
     }
     
@@ -88,9 +90,23 @@ def create_test_html():
         textarea { height: 80px; resize: vertical; }
         button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background-color: #0056b3; }
-        .result { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; }
+        .result { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; max-height: 600px; overflow-y: auto; }
         .error { background-color: #f8d7da; color: #721c24; }
         .success { background-color: #d4edda; color: #155724; }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -139,6 +155,12 @@ def create_test_html():
             </div>
 
             <div class="form-group">
+                <label for="prompt">Custom Prompt (optional):</label>
+                <textarea id="prompt" placeholder="Extract the following information from this document and return as JSON:&#10;{&#10;  &quot;field1&quot;: &quot;description&quot;,&#10;  &quot;field2&quot;: &quot;description&quot;&#10;}"></textarea>
+                <small style="color: #666;">Enter custom prompt for Bedrock AI extraction. Overrides category-based prompts when provided.</small>
+            </div>
+
+            <div class="form-group">
                 <label for="region">AWS Region:</label>
                 <input type="text" id="region" value="us-east-1">
             </div>
@@ -158,6 +180,7 @@ def create_test_html():
             const mode = document.getElementById('mode').value;
             const category = document.getElementById('category').value;
             const queries = document.getElementById('queries').value.trim();
+            const prompt = document.getElementById('prompt').value.trim();
             const region = document.getElementById('region').value;
             const resultDiv = document.getElementById('result');
             
@@ -185,6 +208,7 @@ def create_test_html():
                         mode: mode,
                         category: category || undefined,
                         queries: queries || undefined,
+                        prompt: prompt || undefined,
                         region: region
                     };
                     
@@ -237,6 +261,7 @@ if __name__ == "__main__":
     parser.add_argument("--mode", default="tfbq", help="Analysis mode")
     parser.add_argument("--category", help="Document category")
     parser.add_argument("--queries", help="Custom queries separated by semicolons")
+    parser.add_argument("--prompt", help="Custom prompt for Bedrock AI extraction")
     parser.add_argument("--region", default="us-east-1", help="AWS region")
     parser.add_argument("--api-url", help="API Gateway URL (for remote testing)")
     parser.add_argument("--create-html", action="store_true", help="Create test HTML page")
@@ -246,8 +271,8 @@ if __name__ == "__main__":
     if args.create_html:
         create_test_html()
     elif args.file and args.api_url:
-        test_lambda_api(args.api_url, args.file, args.mode, args.category, args.queries, args.region)
+        test_lambda_api(args.api_url, args.file, args.mode, args.category, args.queries, args.prompt, args.region)
     elif args.file:
-        test_lambda_local(args.file, args.mode, args.category, args.queries, args.region)
+        test_lambda_local(args.file, args.mode, args.category, args.queries, args.prompt, args.region)
     else:
         print("Error: --file is required unless using --create-html")

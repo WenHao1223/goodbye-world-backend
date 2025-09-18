@@ -26,6 +26,7 @@ def lambda_handler(event, context):
             "mode": "tfbq" (optional, default: "tfbq"),
             "category": "licence|receipt|idcard|passport" (optional),
             "queries": "custom queries separated by semicolons" (optional),
+            "prompt": "custom prompt for Bedrock AI extraction" (optional),
             "region": "us-east-1" (optional, default: "us-east-1")
         }
     }
@@ -84,6 +85,7 @@ def lambda_handler(event, context):
         mode = request_data.get('mode', 'tfbq')
         category = request_data.get('category')
         queries = request_data.get('queries')
+        prompt = request_data.get('prompt')
         region = request_data.get('region', 'us-east-1')
         
         # Decode file content
@@ -116,6 +118,8 @@ def lambda_handler(event, context):
                 cmd.extend(['--category', category])
             if queries:
                 cmd.extend(['--queries', queries])
+            if prompt:
+                cmd.extend(['--prompt', prompt])
 
             # Run CLI command
             result = subprocess.run(
@@ -161,9 +165,9 @@ def lambda_handler(event, context):
                             else:
                                 response[json_file.replace('.json', '')] = json.load(f)
             
-            # Find latest output file
+            # Find latest output file (for category-based or custom prompt extraction)
             output_dir = Path('/tmp/output')  # Use /tmp in Lambda
-            if output_dir.exists() and category:
+            if output_dir.exists() and (category or prompt):
                 output_files = list(output_dir.glob('*.json'))
                 if output_files:
                     latest_output = max(output_files, key=os.path.getctime)

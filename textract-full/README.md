@@ -259,6 +259,9 @@ uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the i
 # Category + custom queries combined
 uv run python cli.py --file media/licence.jpeg --mode q --category licence --queries "What is the issuing authority?"
 
+# Custom prompt for Bedrock AI extraction
+uv run python cli.py --file media/licence.jpeg --mode tfb --prompt "Extract name, birth date, license number, and expiry date as JSON"
+
 # All analysis types
 uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
 ```
@@ -640,6 +643,23 @@ uv run python cli.py --file media/licence.jpeg --mode q --category licence --que
 - Avoid duplicating queries from category files
 - Questions should be answerable from the document text
 
+### Custom Prompts
+You can provide custom prompts for Bedrock AI extraction to override category-based prompts:
+
+```bash
+# Using custom prompt for AI extraction
+uv run python cli.py --file media/licence.jpeg --mode tfb --prompt "Extract name, birth date, license number, and expiry date as JSON"
+
+# Custom prompt with specific JSON structure
+uv run python cli.py --file media/licence.jpeg --mode tfb --prompt "Extract the following information and return as JSON: {\"name\": \"full name\", \"dob\": \"date of birth\", \"license_no\": \"license number\"}"
+```
+
+**Prompt Guidelines:**
+- Specify the desired output format (usually JSON)
+- Be clear about which fields to extract
+- Include instructions for handling missing data
+- Works with any analysis mode that includes Bedrock extraction
+
 ### API Response Structure
 ```json
 {
@@ -746,7 +766,7 @@ Rules:
 - Return only valid JSON
 ```
 
-#### **Testing Custom Queries:**
+#### **Testing Custom Queries and Prompts:**
 ```bash
 # Custom queries only
 uv run python cli.py --file document.pdf --mode q --queries "Your question?"
@@ -754,9 +774,72 @@ uv run python cli.py --file document.pdf --mode q --queries "Your question?"
 # Category + custom queries
 uv run python cli.py --file document.pdf --mode tfbq --category licence --queries "Additional question?"
 
-# Via Lambda API
-uv run python test_lambda.py --file document.pdf --queries "Your question?" --api-url YOUR_URL
+# Custom prompt for AI extraction
+uv run python cli.py --file document.pdf --mode tfb --prompt "Extract specific fields as JSON"
+
+# Via Lambda API with custom prompt
+uv run python test_lambda.py --file document.pdf --prompt "Your custom prompt" --api-url YOUR_URL
 ```
+
+### Custom Prompt Engineering
+
+The `--prompt` parameter allows you to override category-based prompts for Bedrock AI extraction, enabling rapid prototyping and adaptation to new document types.
+
+#### **Custom Prompt Examples:**
+
+**Simple Extraction:**
+```bash
+--prompt "Extract the name, date, and amount from this document and return as JSON."
+```
+
+**Structured JSON Output:**
+```bash
+--prompt "Extract the following information and return as JSON:
+{
+  \"document_type\": \"type of document\",
+  \"issuer\": \"issuing organization\",
+  \"recipient\": \"recipient name\",
+  \"date_issued\": \"date in YYYY-MM-DD format\",
+  \"amount\": \"monetary amount as number\",
+  \"reference_number\": \"reference or ID number\"
+}"
+```
+
+**Receipt Analysis:**
+```bash
+--prompt "Analyze this receipt and extract:
+{
+  \"merchant\": \"store name\",
+  \"date\": \"transaction date\",
+  \"total\": \"total amount\",
+  \"tax\": \"tax amount\",
+  \"items\": [\"list of purchased items\"]
+}
+Return only valid JSON."
+```
+
+**Invoice Processing:**
+```bash
+--prompt "Extract invoice details as JSON:
+{
+  \"invoice_number\": \"invoice ID\",
+  \"vendor\": \"vendor name\",
+  \"customer\": \"customer name\",
+  \"date\": \"invoice date\",
+  \"due_date\": \"payment due date\",
+  \"subtotal\": \"subtotal amount\",
+  \"tax_rate\": \"tax percentage\",
+  \"total\": \"total amount\"
+}"
+```
+
+#### **Prompt Best Practices:**
+
+1. **Specify Output Format**: Always request JSON for structured data
+2. **Define Field Names**: Use clear, consistent field names
+3. **Handle Missing Data**: Instruct to use null for missing information
+4. **Format Guidelines**: Specify date formats, number formats, etc.
+5. **Validation Rules**: Add constraints for better accuracy
 
 ## �🐛 Troubleshooting
 
