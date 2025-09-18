@@ -1,0 +1,8 @@
+What is the full name?
+What is the date of birth?
+What is the expiry date?
+What is the licence validity period?
+What is the licence number?
+What is the string below licence number?
+What is the licence class?
+What is the address?

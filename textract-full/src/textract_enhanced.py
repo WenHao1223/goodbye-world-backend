@@ -123,12 +123,16 @@ def analyze_tables(client, file_bytes):
 def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"]):
     try:
         queries_dir = Path(__file__).parent / "queries"
-        queries_file = queries_dir / f"{category}.json" if category else None
+        queries_file = queries_dir / f"{category}.txt" if category else None
 
         if queries_file and queries_file.exists():
             log_print(f"[INFO] Using queries: {queries_file}")
             with open(queries_file, "r", encoding="utf-8") as f:
-                queries_config = {"Queries": json.load(f)}
+                # Read each line as a query text
+                query_texts = [line.strip() for line in f.readlines() if line.strip()]
+                # Convert to the format expected by Textract
+                queries_list = [{"Text": query} for query in query_texts]
+                queries_config = {"Queries": queries_list}
         else:
             log_print(f"[WARN] Queries file {queries_file} not found or category not specified. Using empty queries.")
             queries_config = {"Queries": []}
