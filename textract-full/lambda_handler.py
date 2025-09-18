@@ -25,6 +25,7 @@ def lambda_handler(event, context):
             "filename": "original filename",
             "mode": "tfbq" (optional, default: "tfbq"),
             "category": "licence|receipt|idcard|passport" (optional),
+            "queries": "custom queries separated by semicolons" (optional),
             "region": "us-east-1" (optional, default: "us-east-1")
         }
     }
@@ -82,6 +83,7 @@ def lambda_handler(event, context):
         filename = request_data['filename']
         mode = request_data.get('mode', 'tfbq')
         category = request_data.get('category')
+        queries = request_data.get('queries')
         region = request_data.get('region', 'us-east-1')
         
         # Decode file content
@@ -112,6 +114,8 @@ def lambda_handler(event, context):
             cmd = ['python', 'cli.py', '--file', temp_path, '--mode', mode, '--region', region]
             if category:
                 cmd.extend(['--category', category])
+            if queries:
+                cmd.extend(['--queries', queries])
 
             # Run CLI command
             result = subprocess.run(

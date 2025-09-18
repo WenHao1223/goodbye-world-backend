@@ -120,22 +120,37 @@ def analyze_tables(client, file_bytes):
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Table analysis failed: {e}")
     
-def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"]):
+def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"] = None, custom_queries: str = None):
     try:
-        queries_dir = Path(__file__).parent / "queries"
-        queries_file = queries_dir / f"{category}.txt" if category else None
+        queries_list = []
 
-        if queries_file and queries_file.exists():
-            log_print(f"[INFO] Using queries: {queries_file}")
-            with open(queries_file, "r", encoding="utf-8") as f:
-                # Read each line as a query text
-                query_texts = [line.strip() for line in f.readlines() if line.strip()]
-                # Convert to the format expected by Textract
-                queries_list = [{"Text": query} for query in query_texts]
-                queries_config = {"Queries": queries_list}
-        else:
-            log_print(f"[WARN] Queries file {queries_file} not found or category not specified. Using empty queries.")
-            queries_config = {"Queries": []}
+        # Handle custom queries first
+        if custom_queries:
+            log_print(f"[INFO] Using custom queries: {custom_queries}")
+            # Split by semicolon or newline and clean up
+            import re
+            custom_query_texts = [q.strip() for q in re.split(r'[;\n]', custom_queries) if q.strip()]
+            queries_list.extend([{"Text": query} for query in custom_query_texts])
+
+        # Handle category-based queries
+        if category:
+            queries_dir = Path(__file__).parent / "queries"
+            queries_file = queries_dir / f"{category}.txt"
+
+            if queries_file.exists():
+                log_print(f"[INFO] Using category queries: {queries_file}")
+                with open(queries_file, "r", encoding="utf-8") as f:
+                    # Read each line as a query text
+                    category_query_texts = [line.strip() for line in f.readlines() if line.strip()]
+                    # Convert to the format expected by Textract
+                    queries_list.extend([{"Text": query} for query in category_query_texts])
+            else:
+                log_print(f"[WARN] Queries file {queries_file} not found for category {category}")
+
+        if not queries_list:
+            log_print(f"[WARN] No queries found. Using empty queries.")
+
+        queries_config = {"Queries": queries_list}
         
         response = client.analyze_document(
             Document={'Bytes': file_bytes},
@@ -163,7 +178,7 @@ def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", 
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Query analysis failed: {e}")
 
-def run_textract(file_path: Path, mode: str, category: str, region: str, profile: str, timestamp: str):
+def run_textract(file_path: Path, mode: str, category: str, region: str, profile: str, timestamp: str, custom_queries: str = None):
     # Validate input file
     if not file_path.exists():
         raise SystemExit(f"[ERROR] File not found: {file_path}")
@@ -236,7 +251,7 @@ def run_textract(file_path: Path, mode: str, category: str, region: str, profile
 
     if 'q' in mode:
         log_print("\n=== QUERY ANALYSIS ===")
-        queries = analyze_queries(client, file_bytes, category)
+        queries = analyze_queries(client, file_bytes, category, custom_queries)
         for question, answer in queries.items():
             log_print(f"Q: {question}")
             log_print(f"A: {answer}")

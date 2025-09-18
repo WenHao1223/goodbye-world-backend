@@ -9,16 +9,16 @@ import requests
 from pathlib import Path
 
 
-def test_lambda_local(file_path, mode="tfbq", category=None, region="us-east-1"):
+def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, region="us-east-1"):
     """Test Lambda function locally"""
-    
+
     # Import the handler
     from lambda_handler import lambda_handler
-    
+
     # Read and encode file
     with open(file_path, 'rb') as f:
         file_content = base64.b64encode(f.read()).decode('utf-8')
-    
+
     # Create test event
     event = {
         "httpMethod": "POST",
@@ -27,6 +27,7 @@ def test_lambda_local(file_path, mode="tfbq", category=None, region="us-east-1")
             "filename": Path(file_path).name,
             "mode": mode,
             "category": category,
+            "queries": queries,
             "region": region
         })
     }
@@ -40,19 +41,20 @@ def test_lambda_local(file_path, mode="tfbq", category=None, region="us-east-1")
     return result
 
 
-def test_lambda_api(api_url, file_path, mode="tfbq", category=None, region="us-east-1"):
+def test_lambda_api(api_url, file_path, mode="tfbq", category=None, queries=None, region="us-east-1"):
     """Test deployed Lambda function via API Gateway"""
-    
+
     # Read and encode file
     with open(file_path, 'rb') as f:
         file_content = base64.b64encode(f.read()).decode('utf-8')
-    
+
     # Create request payload
     payload = {
         "file_content": file_content,
         "filename": Path(file_path).name,
         "mode": mode,
         "category": category,
+        "queries": queries,
         "region": region
     }
     
@@ -83,6 +85,7 @@ def create_test_html():
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        textarea { height: 80px; resize: vertical; }
         button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background-color: #0056b3; }
         .result { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; }
@@ -108,14 +111,13 @@ def create_test_html():
             <div class="form-group">
                 <label for="mode">Analysis Mode:</label>
                 <select id="mode">
-                    <option value="tfbq">All (Text, Forms, Tables, Queries)</option>
-                    <option value="t">Text Only</option>
-                    <option value="f">Forms Only</option>
-                    <option value="b">Tables Only</option>
-                    <option value="q">Queries Only</option>
-                    <option value="tf">Text + Forms</option>
-                    <option value="tb">Text + Tables</option>
-                    <option value="fb">Forms + Tables</option>
+                    <option value="t">Text Only (t)</option>
+                    <option value="tf">Text + Forms (tf)</option>
+                    <option value="tb">Text + Tables (tb)</option>
+                    <option value="tq">Text + Queries (tq)</option>
+                    <option value="tfq">Text + Forms + Queries (tfq)</option>
+                    <option value="tbq">Text + Tables + Queries (tfbq)</option>
+                    <option value="tfbq" selected>All Analysis Types (Text + Forms + Tables + Queries) (tfbq)</option>
                 </select>
             </div>
             
@@ -124,12 +126,18 @@ def create_test_html():
                 <select id="category">
                     <option value="">None</option>
                     <option value="licence">License</option>
-                    <option value="receipt">Receipt</option>
-                    <option value="idcard">ID Card</option>
-                    <option value="passport">Passport</option>
+                    <!-- <option value="receipt">Receipt</option> -->
+                    <!-- <option value="idcard">ID Card</option> -->
+                    <!-- <option value="passport">Passport</option> -->
                 </select>
             </div>
-            
+
+            <div class="form-group">
+                <label for="queries">Custom Queries (optional):</label>
+                <textarea id="queries" placeholder="What is the full name?&#10;What is the date?&#10;What is the address?"></textarea>
+                <small style="color: #666;">Enter custom questions separated by semicolons (;) or new lines. Works with or without category selection.</small>
+            </div>
+
             <div class="form-group">
                 <label for="region">AWS Region:</label>
                 <input type="text" id="region" value="us-east-1">
@@ -149,6 +157,7 @@ def create_test_html():
             const fileInput = document.getElementById('file');
             const mode = document.getElementById('mode').value;
             const category = document.getElementById('category').value;
+            const queries = document.getElementById('queries').value.trim();
             const region = document.getElementById('region').value;
             const resultDiv = document.getElementById('result');
             
@@ -175,6 +184,7 @@ def create_test_html():
                         filename: file.name,
                         mode: mode,
                         category: category || undefined,
+                        queries: queries || undefined,
                         region: region
                     };
                     
@@ -226,17 +236,18 @@ if __name__ == "__main__":
     parser.add_argument("--file", help="Path to test file")
     parser.add_argument("--mode", default="tfbq", help="Analysis mode")
     parser.add_argument("--category", help="Document category")
+    parser.add_argument("--queries", help="Custom queries separated by semicolons")
     parser.add_argument("--region", default="us-east-1", help="AWS region")
     parser.add_argument("--api-url", help="API Gateway URL (for remote testing)")
     parser.add_argument("--create-html", action="store_true", help="Create test HTML page")
-    
+
     args = parser.parse_args()
-    
+
     if args.create_html:
         create_test_html()
     elif args.file and args.api_url:
-        test_lambda_api(args.api_url, args.file, args.mode, args.category, args.region)
+        test_lambda_api(args.api_url, args.file, args.mode, args.category, args.queries, args.region)
     elif args.file:
-        test_lambda_local(args.file, args.mode, args.category, args.region)
+        test_lambda_local(args.file, args.mode, args.category, args.queries, args.region)
     else:
         print("Error: --file is required unless using --create-html")

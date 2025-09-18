@@ -253,6 +253,12 @@ uv run python cli.py --file media/document.pdf --mode b
 # Queries only (requires category)
 uv run python cli.py --file media/licence.jpeg --mode q --category licence
 
+# Custom queries only
+uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the issuing authority?;What is the photo quality?"
+
+# Category + custom queries combined
+uv run python cli.py --file media/licence.jpeg --mode q --category licence --queries "What is the issuing authority?"
+
 # All analysis types
 uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
 ```
@@ -617,6 +623,23 @@ uv run python cli.py --file media/licence.jpeg --mode q --category licence
 - `idcard` - ID card analysis
 - `passport` - Passport analysis
 
+### Custom Queries
+You can provide custom queries in addition to or instead of category-based queries:
+
+```bash
+# Using only custom queries
+uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the issuing authority?;What is the photo quality?"
+
+# Combining category and custom queries
+uv run python cli.py --file media/licence.jpeg --mode q --category licence --queries "What is the issuing authority?;What is the photo quality?"
+```
+
+**Query Guidelines:**
+- Separate multiple queries with semicolons (`;`) or new lines (`\n`)
+- Keep queries specific and clear
+- Avoid duplicating queries from category files
+- Questions should be answerable from the document text
+
 ### API Response Structure
 ```json
 {
@@ -639,6 +662,100 @@ uv run python cli.py --file media/licence.jpeg --mode q --category licence
 ```bash
 export AWS_REGION=us-east-1
 export AWS_PROFILE=default
+```
+
+## 📝 Developer Guide: Custom Queries and Prompts
+
+### Writing Custom Queries
+
+Queries are questions that Textract will attempt to answer based on the document content.
+
+#### **Query Best Practices:**
+
+1. **Be Specific**: Ask for exact information you need
+   ```
+   ✅ Good: "What is the expiry date?"
+   ❌ Avoid: "What are the dates?"
+   ```
+
+2. **Use Clear Language**: Simple, direct questions work best
+   ```
+   ✅ Good: "What is the full name?"
+   ✅ Good: "What is the licence class?"
+   ✅ Good: "What is the address?"
+   ```
+
+3. **Avoid Duplicates**: Don't repeat queries from category files
+   ```bash
+   # Check existing queries first
+   cat src/queries/licence.txt
+   ```
+
+4. **Format Correctly**: Separate multiple queries with semicolons or new lines
+   ```bash
+   # Using semicolons
+   --queries "What is the issuing authority?;What is the photo quality?;What is the security code?"
+
+   # Using new lines (in scripts or multi-line input)
+   --queries "What is the issuing authority?
+   What is the photo quality?
+   What is the security code?"
+   ```
+
+#### **Query Examples by Document Type:**
+
+**Driver's License:**
+```bash
+--queries "What is the issuing state?;What is the restriction code?;What is the endorsement?"
+```
+
+**Receipt/Invoice:**
+```bash
+--queries "What is the tax amount?;What is the payment method?;What is the cashier name?"
+```
+
+**ID Card:**
+```bash
+--queries "What is the issuing country?;What is the document number?;What is the place of birth?"
+```
+
+### Writing Custom Prompts
+
+Prompts are used by Bedrock AI for structured data extraction in `src/prompts/{category}.txt`.
+
+#### **Example Prompt Structure:**
+```
+Extract the following information from this driver's license text and return as JSON:
+
+{
+  "full_name": "Full name of the license holder",
+  "identity_no": "Identity/IC number",
+  "date_of_birth": "Date of birth in YYYY-MM-DD format",
+  "nationality": "Nationality",
+  "licence_number": "License number",
+  "licence_classes": ["Array of license classes"],
+  "valid_from": "Valid from date in YYYY-MM-DD format",
+  "valid_to": "Valid to date in YYYY-MM-DD format",
+  "address": "Full address"
+}
+
+Rules:
+- Use null for missing information
+- Format dates as YYYY-MM-DD
+- Extract exact text, don't interpret
+- Return only valid JSON
+```
+
+#### **Testing Custom Queries:**
+```bash
+# Custom queries only
+uv run python cli.py --file document.pdf --mode q --queries "Your question?"
+
+# Category + custom queries
+uv run python cli.py --file document.pdf --mode tfbq --category licence --queries "Additional question?"
+
+# Via Lambda API
+uv run python test_lambda.py --file document.pdf --queries "Your question?" --api-url YOUR_URL
 ```
 
 ## �🐛 Troubleshooting

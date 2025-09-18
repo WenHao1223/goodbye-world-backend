@@ -18,32 +18,35 @@ from .blur_detection import run_blur_detection
 def main():
     parser = argparse.ArgumentParser(description="Combined Textract, Bedrock, and Blur Detection CLI")
     parser.add_argument("--file", required=True, type=Path, help="Path to the input file")
-    parser.add_argument("--mode", required=False, default="tfbq", 
+    parser.add_argument("--mode", required=False, default="tfbq",
                         help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
-    parser.add_argument("--category", required=False, default=None, 
+    parser.add_argument("--category", required=False, default=None,
                         choices=["licence", "receipt", "idcard", "passport"],
                         help="Document category for queries and extraction")
+    parser.add_argument("--queries", required=False, default=None,
+                        help="Custom queries separated by semicolons (e.g., 'What is the name?;What is the date?')")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name") # False to enable env var usage
     
     args = parser.parse_args()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # category is required for query mode
-    if 'q' in args.mode and not args.category:
-        raise SystemExit("[ERROR] Category is required for query mode")
+    # Either category or queries is required for query mode
+    if 'q' in args.mode and not args.category and not args.queries:
+        raise SystemExit("[ERROR] Either --category or --queries is required for query mode")
 
     # Print parsed arguments
     log_print(f"[INFO] Using file: {args.file}")
     log_print(f"[INFO] Using mode: {args.mode}")
     log_print(f"[INFO] Document category: {args.category if args.category else 'N/A'}")
+    log_print(f"[INFO] Custom queries: {args.queries if args.queries else 'N/A'}")
     log_print(f"[INFO] Using region: {args.region}")
     log_print(f"[INFO] Using profile: {args.profile if args.profile else 'default'}")
 
     try:
         # Step 1: Run Textract
         textract_results, log_subdir = run_textract(
-            args.file, args.mode, args.category, args.region, args.profile, timestamp
+            args.file, args.mode, args.category, args.region, args.profile, timestamp, args.queries
         )
         
         # Helper function to ensure JSON serialization
