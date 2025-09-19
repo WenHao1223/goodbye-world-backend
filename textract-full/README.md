@@ -61,7 +61,9 @@ uv run python cli.py --file <path> --mode <mode> [options]
 | ------------ | --------------------------------------------------------- | ----------- | -------- |
 | `--file`     | Path to input file (JPEG/PNG/PDF)                         | -           | ✅       |
 | `--mode`     | Analysis mode: t(ext), f(orms), b(tables), q(uery)        | `tfbq`      | ❌       |
-| `--category` | Document type: `licence`, `receipt`, `idcard`, `passport` (auto-detected if not provided) | -           | ❌       |
+| `--category` | Document type: `licence`, `receipt`, `bank-receipt`, `idcard`, `passport` (auto-detected if not provided) | -           | ❌       |
+| `--queries`  | Custom queries separated by semicolons or newlines        | -           | ❌       |
+| `--prompt`   | Custom prompt for Bedrock AI extraction                   | -           | ❌       |
 | `--custom`   | Use custom queries/prompts even if category files exist   | `False`     | ❌       |
 | `--region`   | AWS region                                                | `us-east-1` | ❌       |
 | `--profile`  | AWS profile name                                          | `default`   | ❌       |
@@ -590,38 +592,57 @@ Overall: CLEAR (confidence: high)
 
 ### Document Category Detection
 
-The system now automatically detects document categories using AI analysis:
+The system automatically detects document categories using AI analysis of extracted text, forms, and tables:
 
 ```bash
-# Auto-detection (no --category needed)
+# Auto-detection (recommended - no --category needed)
 uv run python cli.py --file document.pdf --mode tfbq
-
-# The system will:
-# 1. Run initial text/forms/tables analysis
-# 2. Use AI to classify the document type
-# 3. Apply appropriate queries and prompts
-# 4. Save detection results to category_detection.json
 ```
 
-### Detection Process
+**How it works:**
+1. **Initial Analysis**: Extracts text, forms, and tables using Textract
+2. **AI Classification**: Uses Bedrock Claude AI to analyze content and classify document type
+3. **Category Assignment**: Applies detected category for queries and prompts
+4. **Results Saved**: Detection results saved to `category_detection.json`
 
-1. **Initial Analysis**: Extract text, forms, and tables
-2. **AI Classification**: Use Bedrock to analyze content and classify
-3. **Category Assignment**: Apply detected category for queries/prompts
-4. **Fallback Handling**: Use custom queries/prompts if category files missing
+**Supported Categories:**
+- `licence` - Driver's license, driving permits
+- `receipt` - Purchase receipts, invoices from retail stores
+- `bank-receipt` - Bank transaction receipts, ATM receipts, bank statements
+- `idcard` - Identity cards, national IDs, employee IDs
+- `passport` - Passports, travel documents
+
+**Detection Confidence:**
+- High confidence (0.7-1.0): Very reliable classification
+- Medium confidence (0.4-0.7): Moderately reliable
+- Low confidence (0.0-0.4): Less reliable, may need manual verification
+
+### Manual Category Override
+
+```bash
+# Specify category explicitly (skips auto-detection)
+uv run python cli.py --file document.pdf --mode tfbq --category bank-receipt
+```
 
 ### Custom Mode
 
+Use `--custom` to override category-based files with your own queries/prompts:
+
 ```bash
-# Force custom mode (ignore category files)
-uv run python cli.py --file document.pdf --mode tfbq --custom
+# Custom mode with explicit queries (ignores category query files)
+uv run python cli.py --file document.pdf --mode q --custom --queries "What is the date?;What is the amount?"
 
-# Custom with explicit queries
-uv run python cli.py --file document.pdf --mode q --custom --queries "What is the date?"
-
-# Custom with explicit prompt
+# Custom mode with explicit prompt (ignores category prompt files)
 uv run python cli.py --file document.pdf --mode tfb --custom --prompt "Extract all dates as JSON"
+
+# Custom mode for categories without default files (like bank-receipt)
+uv run python cli.py --file bank-receipt.pdf --mode q --category bank-receipt --custom --queries "What is the transaction amount?"
 ```
+
+**Custom Mode Rules:**
+- If `--custom` is used and no custom queries/prompts provided, system checks for category files
+- If no category files exist (like `bank-receipt`), custom queries/prompts are **required**
+- Error thrown if custom mode enabled but no custom content and no category files found
 
 ## 🔧 Configuration
 
@@ -686,50 +707,86 @@ uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the n
 
 ### Categories (for queries and AI extraction)
 - **Auto-detected** - AI automatically detects document type (recommended)
-- `receipt` - Receipt/invoice analysis
-- `bank-receipt` - Bank transaction receipt, ATM receipt, or bank statement
-- `licence` - Driver's license analysis
-- `idcard` - ID card analysis
-- `passport` - Passport analysis
+- `receipt` - Purchase receipts, invoices from retail stores
+- `bank-receipt` - Bank transaction receipts, ATM receipts, bank statements
+- `licence` - Driver's licenses, driving permits
+- `idcard` - Identity cards, national IDs, employee IDs
+- `passport` - Passports, travel documents
 
-### Custom Mode
-- `--custom` - Use custom queries/prompts even when category files exist
+### Analysis Modes (`--mode`)
+- `t` - Text detection only (fastest)
+- `f` - Forms analysis (key-value pairs)
+- `b` - Tables analysis (structured data)
+- `q` - Queries analysis (requires category or custom queries)
+- `tfbq` - All analysis types (recommended)
+
+### Custom Mode (`--custom`)
+- Forces use of custom queries/prompts even when category files exist
+- Required for categories without default files (like `bank-receipt`)
 - Enables development and testing of new document types
-- Overrides category-based prompts and queries
+- Must provide `--queries` or `--prompt` when no category files exist
 
-### Custom Queries
-You can provide custom queries in addition to or instead of category-based queries:
+## 📝 Advanced Usage
+
+### Custom Queries (`--queries`)
+
+Provide custom questions for Textract to answer about the document:
 
 ```bash
-# Using only custom queries
-uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the issuing authority?;What is the photo quality?"
+# Single query
+uv run python cli.py --file document.pdf --mode q --queries "What is the total amount?"
 
-# Combining category and custom queries
-uv run python cli.py --file media/licence.jpeg --mode q --category licence --queries "What is the issuing authority?;What is the photo quality?"
+# Multiple queries (semicolon or newline separated)
+uv run python cli.py --file document.pdf --mode q --queries "What is the date?;What is the amount?;Who is the recipient?"
+
+# Multiline format
+uv run python cli.py --file document.pdf --mode q --queries "What is the transaction date?
+What is the reference number?
+What is the beneficiary name?"
 ```
 
-**Query Guidelines:**
-- Separate multiple queries with semicolons (`;`) or new lines (`\n`)
-- Keep queries specific and clear
-- Avoid duplicating queries from category files
-- Questions should be answerable from the document text
+**Query Best Practices:**
+- Ask specific, direct questions
+- Use clear, simple language
+- Questions should be answerable from visible text
+- Avoid overly complex or interpretive questions
 
-### Custom Prompts
-You can provide custom prompts for Bedrock AI extraction to override category-based prompts:
+### Custom Prompts (`--prompt`)
+
+Provide custom instructions for Bedrock AI to extract structured data:
 
 ```bash
-# Using custom prompt for AI extraction
-uv run python cli.py --file media/licence.jpeg --mode tfb --prompt "Extract name, birth date, license number, and expiry date as JSON"
+# Basic extraction
+uv run python cli.py --file document.pdf --mode tfb --prompt "Extract all monetary amounts and dates as JSON"
 
-# Custom prompt with specific JSON structure
-uv run python cli.py --file media/licence.jpeg --mode tfb --prompt "Extract the following information and return as JSON: {\"name\": \"full name\", \"dob\": \"date of birth\", \"license_no\": \"license number\"}"
+# Structured JSON extraction
+uv run python cli.py --file receipt.pdf --mode tfb --prompt "Extract: {\"merchant\": \"store name\", \"total\": \"amount as number\", \"date\": \"YYYY-MM-DD format\"}"
+
+# Bank receipt extraction
+uv run python cli.py --file bank-receipt.pdf --mode tfb --prompt "Extract transaction details: amount, date, beneficiary name, reference ID as JSON"
 ```
 
 **Prompt Guidelines:**
-- Specify the desired output format (usually JSON)
-- Be clear about which fields to extract
-- Include instructions for handling missing data
-- Works with any analysis mode that includes Bedrock extraction
+- Specify desired output format (JSON recommended)
+- Define field names and data types
+- Include formatting instructions (date formats, etc.)
+- Specify how to handle missing data (use null)
+
+### Argument Combinations
+
+```bash
+# Auto-detection with custom queries
+uv run python cli.py --file document.pdf --mode tfbq --queries "Additional question?"
+
+# Explicit category with custom prompt
+uv run python cli.py --file document.pdf --mode tfb --category receipt --prompt "Custom extraction prompt"
+
+# Custom mode overriding category files
+uv run python cli.py --file document.pdf --mode tfbq --category licence --custom --queries "Custom questions" --prompt "Custom prompt"
+
+# Bank receipt with required custom content
+uv run python cli.py --file bank-receipt.pdf --mode q --category bank-receipt --custom --queries "What is the transaction amount?"
+```
 
 ### API Response Structure
 ```json

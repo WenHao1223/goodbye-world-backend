@@ -9,7 +9,7 @@ import requests
 from pathlib import Path
 
 
-def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, prompt=None, region="us-east-1"):
+def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, prompt=None, custom=False, region="us-east-1"):
     """Test Lambda function locally"""
 
     # Import the handler
@@ -29,6 +29,7 @@ def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, promp
             "category": category,
             "queries": queries,
             "prompt": prompt,
+            "custom": custom,
             "region": region
         })
     }
@@ -42,7 +43,7 @@ def test_lambda_local(file_path, mode="tfbq", category=None, queries=None, promp
     return result
 
 
-def test_lambda_api(api_url, file_path, mode="tfbq", category=None, queries=None, prompt=None, region="us-east-1"):
+def test_lambda_api(api_url, file_path, mode="tfbq", category=None, queries=None, prompt=None, custom=False, region="us-east-1"):
     """Test deployed Lambda function via API Gateway"""
 
     # Read and encode file
@@ -57,6 +58,7 @@ def test_lambda_api(api_url, file_path, mode="tfbq", category=None, queries=None
         "category": category,
         "queries": queries,
         "prompt": prompt,
+        "custom": custom,
         "region": region
     }
     
@@ -138,26 +140,41 @@ def create_test_html():
             </div>
             
             <div class="form-group">
-                <label for="category">Document Category (optional):</label>
+                <label for="category">Document Category (optional - auto-detected if not provided):</label>
                 <select id="category">
-                    <option value="">None</option>
-                    <option value="licence">License</option>
-                    <!-- <option value="receipt">Receipt</option> -->
-                    <!-- <option value="idcard">ID Card</option> -->
-                    <!-- <option value="passport">Passport</option> -->
+                    <option value="">Auto-detect (recommended)</option>
+                    <option value="licence">Driver's License</option>
+                    <option value="receipt">Receipt/Invoice</option>
+                    <option value="bank-receipt">Bank Receipt/Statement</option>
+                    <option value="idcard">ID Card</option>
+                    <option value="passport">Passport</option>
                 </select>
+                <small style="color: #666;">Leave as "Auto-detect" to let AI classify the document type automatically.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="custom">Custom Mode:</label>
+                <input type="checkbox" id="custom" style="width: auto; margin-right: 8px;">
+                <span id="customToggle" style="cursor:pointer;">Use custom queries/prompts even if category has default files</span>
+                <br><small style="color: #666;">Enable this to override category-based queries/prompts with your custom ones.</small>
+                <br><small style="color: #666;">Required for document category other than license.</small>
+                <br><small style="color: #666;">Analysis mode must include "q" for custom queries to work.</small>
             </div>
 
             <div class="form-group">
                 <label for="queries">Custom Queries (optional):</label>
-                <textarea id="queries" placeholder="What is the full name?&#10;What is the date?&#10;What is the address?"></textarea>
-                <small style="color: #666;">Enter custom questions separated by semicolons (;) or new lines. Works with or without category selection.</small>
+                <textarea id="queries" placeholder="What is the transaction amount?&#10;What is the beneficiary name?&#10;What is the reference number?"></textarea>
+                <br><small style="color: #666;">Enter custom questions separated by semicolons (;) or new lines.</small>
+                <br><small style="color: #666;">Custom mode ON: Use your own queries if you have them. If not, use the default queries for the category.</small>
+                <br><small style="color: #666;">Custom mode OFF: Use the default queries for the category, and add your own queries if you have any.</small>
+                <br><small style="color: #666;">Refer sample queries <a href="https://github.com/WenHao1223/great-ai-hackathon-test/tree/master/textract-full/src/queries" style="color: #666" target="_blank">here</a>.</small>
             </div>
 
             <div class="form-group">
                 <label for="prompt">Custom Prompt (optional):</label>
-                <textarea id="prompt" placeholder="Extract the following information from this document and return as JSON:&#10;{&#10;  &quot;field1&quot;: &quot;description&quot;,&#10;  &quot;field2&quot;: &quot;description&quot;&#10;}"></textarea>
+                <textarea id="prompt" placeholder="Extract transaction details as JSON:&#10;{&#10;  &quot;amount&quot;: &quot;transaction amount as number&quot;,&#10;  &quot;date&quot;: &quot;date in YYYY-MM-DD format&quot;,&#10;  &quot;beneficiary&quot;: &quot;recipient name&quot;,&#10;  &quot;reference&quot;: &quot;reference or transaction ID&quot;&#10;}"></textarea>
                 <small style="color: #666;">Enter custom prompt for Bedrock AI extraction. Overrides category-based prompts when provided.</small>
+                <br><small style="color: #666;">Refer sample prompts <a href="https://github.com/WenHao1223/great-ai-hackathon-test/tree/master/textract-full/src/prompts" style="color: #666" target="_blank">here</a>.</small>
             </div>
 
             <div class="form-group">
@@ -172,6 +189,12 @@ def create_test_html():
     </div>
 
     <script>
+        // Toggle checkbox when span is clicked
+        document.getElementById('customToggle').addEventListener('click', function() {
+            const customCheckbox = document.getElementById('custom');
+            customCheckbox.checked = !customCheckbox.checked;
+        });
+
         document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -202,6 +225,8 @@ def create_test_html():
                 reader.onload = async function(e) {
                     const fileContent = e.target.result.split(',')[1]; // Remove data:type;base64, prefix
                     
+                    const custom = document.getElementById('custom').checked;
+                    
                     const payload = {
                         file_content: fileContent,
                         filename: file.name,
@@ -209,6 +234,7 @@ def create_test_html():
                         category: category || undefined,
                         queries: queries || undefined,
                         prompt: prompt || undefined,
+                        custom: custom,
                         region: region
                     };
                     
@@ -225,7 +251,27 @@ def create_test_html():
                         
                         if (response.ok) {
                             resultDiv.className = 'result success';
-                            resultDiv.innerHTML = '<h3>Success!</h3><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                            let html = '<h3>Analysis Complete!</h3>';
+                            
+                            // Show category detection if available
+                            if (result.category_detection) {
+                                html += '<h4>📋 Category Detection</h4>';
+                                html += '<p><strong>Detected:</strong> ' + result.category_detection.detected_category + '</p>';
+                                html += '<p><strong>Confidence:</strong> ' + (result.category_detection.confidence * 100).toFixed(1) + '%</p>';
+                            }
+                            
+                            // Show blur analysis if available
+                            if (result.blur_analysis && result.blur_analysis.overall_assessment) {
+                                html += '<h4>🔍 Image Quality</h4>';
+                                html += '<p><strong>Quality:</strong> ' + (result.blur_analysis.overall_assessment.is_blurry ? 'Poor (Blurry)' : 'Good') + '</p>';
+                                if (result.blur_analysis.textract_analysis) {
+                                    html += '<p><strong>Confidence:</strong> ' + result.blur_analysis.textract_analysis.median_confidence.toFixed(1) + '%</p>';
+                                }
+                            }
+                            
+                            html += '<h4>📄 Full Results</h4>';
+                            html += '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                            resultDiv.innerHTML = html;
                         } else {
                             resultDiv.className = 'result error';
                             resultDiv.innerHTML = '<h3>Error</h3><pre>' + JSON.stringify(result, null, 2) + '</pre>';
@@ -247,7 +293,7 @@ def create_test_html():
 </body>
 </html>"""
     
-    with open('test_lambda.html', 'w') as f:
+    with open('test_lambda.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
     
     print("Created test_lambda.html")
@@ -262,6 +308,7 @@ if __name__ == "__main__":
     parser.add_argument("--category", help="Document category")
     parser.add_argument("--queries", help="Custom queries separated by semicolons")
     parser.add_argument("--prompt", help="Custom prompt for Bedrock AI extraction")
+    parser.add_argument("--custom", action="store_true", help="Use custom mode")
     parser.add_argument("--region", default="us-east-1", help="AWS region")
     parser.add_argument("--api-url", help="API Gateway URL (for remote testing)")
     parser.add_argument("--create-html", action="store_true", help="Create test HTML page")
@@ -271,8 +318,8 @@ if __name__ == "__main__":
     if args.create_html:
         create_test_html()
     elif args.file and args.api_url:
-        test_lambda_api(args.api_url, args.file, args.mode, args.category, args.queries, args.prompt, args.region)
+        test_lambda_api(args.api_url, args.file, args.mode, args.category, args.queries, args.prompt, args.custom, args.region)
     elif args.file:
-        test_lambda_local(args.file, args.mode, args.category, args.queries, args.prompt, args.region)
+        test_lambda_local(args.file, args.mode, args.category, args.queries, args.prompt, args.custom, args.region)
     else:
         print("Error: --file is required unless using --create-html")
