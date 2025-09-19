@@ -26,43 +26,43 @@ All JSON files use **JSONL format** (JSON Lines) where each line contains one JS
 
 ### 1. Import Accounts Data
 ```bash
-mongoimport --db  greataihackathon --collection accounts --file databases/accounts.json
+mongoimport --db greataihackathon --collection accounts --file databases/accounts.json
 ```
 
 ### 2. Import License Data
 ```bash
-mongoimport --db  greataihackathon --collection licenses --file databases/license.json
+mongoimport --db greataihackathon --collection licenses --file databases/license.json
 ```
 
 ### 3. Import TNB Bills Data
 ```bash
-mongoimport --db  greataihackathon --collection tnb_bills --file databases/tnb.json
+mongoimport --db greataihackathon --collection tnb_bills --file databases/tnb.json
 ```
 
 ### 4. Import Transactions Data
 ```bash
-mongoimport --db  greataihackathon --collection transactions --file databases/transactions.json
+mongoimport --db greataihackathon --collection transactions --file databases/transactions.json
 ```
 
 ### Import All Collections (Batch)
 ```bash
 # Windows Command Prompt
-mongoimport --db  greataihackathon --collection accounts --file databases\accounts.json
-mongoimport --db  greataihackathon --collection licenses --file databases\license.json
-mongoimport --db  greataihackathon --collection tnb_bills --file databases\tnb.json
-mongoimport --db  greataihackathon --collection transactions --file databases\transactions.json
+mongoimport --db greataihackathon --collection accounts --file databases\accounts.json
+mongoimport --db greataihackathon --collection licenses --file databases\license.json
+mongoimport --db greataihackathon --collection tnb_bills --file databases\tnb.json
+mongoimport --db greataihackathon --collection transactions --file databases\transactions.json
 ```
 
 ## Connection Options
 
 ### Local MongoDB
 ```bash
-mongoimport --host localhost:27017 --db  greataihackathon --collection accounts --file databases/accounts.json
+mongoimport --host localhost:27017 --db greataihackathon --collection accounts --file databases/accounts.json
 ```
 
 ### MongoDB with Authentication
 ```bash
-mongoimport --host localhost:27017 --db  greataihackathon --username your_username --password your_password --authenticationDatabase admin --collection accounts --file databases/accounts.json
+mongoimport --host localhost:27017 --db greataihackathon --username your_username --password your_password --authenticationDatabase admin --collection accounts --file databases/accounts.json
 ```
 
 ### MongoDB Atlas (Cloud)
