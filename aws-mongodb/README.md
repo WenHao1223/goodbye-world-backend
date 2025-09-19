@@ -36,7 +36,7 @@ mongoimport --db greataihackathon --collection licenses --file databases/license
 
 ### 3. Import TNB Bills Data
 ```bash
-mongoimport --db greataihackathon --collection tnb_bills --file databases/tnb.json
+mongoimport --db greataihackathon --collection tnb --file databases/tnb.json
 ```
 
 ### 4. Import Transactions Data
@@ -49,8 +49,16 @@ mongoimport --db greataihackathon --collection transactions --file databases/tra
 # Windows Command Prompt
 mongoimport --db greataihackathon --collection accounts --file databases\accounts.json
 mongoimport --db greataihackathon --collection licenses --file databases\license.json
-mongoimport --db greataihackathon --collection tnb_bills --file databases\tnb.json
+mongoimport --db greataihackathon --collection tnb --file databases\tnb.json
 mongoimport --db greataihackathon --collection transactions --file databases\transactions.json
+```
+
+```bash
+# Unix/Linux/MacOS
+mongoimport --uri "mongodb+srv://wenhao1223:1223@greataihackathon.npyt0oz.mongodb.net/" --db greataihackathon --collection accounts --file databases\accounts.json
+mongoimport --uri "mongodb+srv://wenhao1223:1223@greataihackathon.npyt0oz.mongodb.net/" --db greataihackathon --collection licenses --file databases\license.json
+mongoimport --uri "mongodb+srv://wenhao1223:1223@greataihackathon.npyt0oz.mongodb.net/" --db greataihackathon --collection tnb --file databases\tnb.json
+mongoimport --uri "mongodb+srv://wenhao1223:1223@greataihackathon.npyt0oz.mongodb.net/" --db greataihackathon --collection transactions --file databases\transactions.json
 ```
 
 ## Connection Options
@@ -75,8 +83,8 @@ mongoimport --uri "mongodb+srv://username:password@cluster.mongodb.net/ greataih
 The collections are related as follows:
 
 ### TNB Bills → Transactions
-- `tnb_bills.bill.akaun.no_invois` links to `transactions.bill_reference`
-- `tnb_bills.pembayaran.rujukan` matches `transactions.reference_id`
+- `tnb.bill.akaun.no_invois` links to `transactions.bill_reference`
+- `tnb.pembayaran.rujukan` matches `transactions.reference_id`
 
 ### Accounts → Transactions
 - `accounts.beneficiary_name` matches `transactions.beneficiary_name`
@@ -89,7 +97,7 @@ The collections are related as follows:
 
 ### Find All TNB Bills
 ```javascript
-db.tnb_bills.find({"bill.tarif.jenis": "A: Kediaman"})
+db.tnb.find({"bill.tarif.jenis": "A: Kediaman"})
 ```
 
 ### Find Successful Transactions
@@ -99,7 +107,7 @@ db.transactions.find({"status": "Successful"})
 
 ### Find Unpaid TNB Bills
 ```javascript
-db.tnb_bills.find({"status": "unpaid"})
+db.tnb.find({"status": "unpaid"})
 ```
 
 ### Link Transaction to TNB Bill
@@ -107,7 +115,7 @@ db.tnb_bills.find({"status": "unpaid"})
 db.transactions.aggregate([
   {
     $lookup: {
-      from: "tnb_bills",
+      from: "tnb",
       localField: "bill_reference",
       foreignField: "bill.akaun.no_invois",
       as: "bill_details"
@@ -129,7 +137,7 @@ After import, verify data count:
 // Check collection counts
 db.accounts.countDocuments()      // Should return 3
 db.licenses.countDocuments()      // Should return 7  
-db.tnb_bills.countDocuments()     // Should return 7
+db.tnb.countDocuments()     // Should return 7
 db.transactions.countDocuments()  // Should return 6
 ```
 
