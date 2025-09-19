@@ -46,7 +46,7 @@ def detect_document_category(textract_results: Dict, region: str, profile: Optio
     bedrock = session.client("bedrock-runtime")
     
     classification_prompt = """Analyze the following document content and classify it into one of these categories:
-- licence: Driver's license, driving permit, or similar identification with driving privileges
+- license: Driver's license, driving permit, or similar identification with driving privileges
 - receipt: Purchase receipt, invoice, bill, or transaction record from retail stores
 - bank-receipt: Bank transaction receipt, ATM receipt, or bank statement
 - idcard: Identity card, national ID, employee ID, or general identification document
@@ -59,7 +59,7 @@ def detect_document_category(textract_results: Dict, region: str, profile: Optio
 
 Return your response as JSON with this exact format:
 {
-  "category": "one of: licence, receipt, bank-receipt, idcard, passport",
+  "category": "one of: license, receipt, bank-receipt, idcard, passport",
   "confidence": {
     "level": "one of: low, medium, high",
     "score": "floating point number between 0.0 and 1.0"
@@ -95,7 +95,7 @@ Document content to analyze:"""
         
         if json_start != -1 and json_end > json_start:
             classification = json.loads(raw_text[json_start:json_end])
-            category = classification.get('category', 'licence')
+            category = classification.get('category', 'license')
             # Handle both old and new confidence formats
             if isinstance(classification.get('confidence'), dict):
                 confidence_score = classification['confidence'].get('score', 0.5)
@@ -112,6 +112,6 @@ Document content to analyze:"""
     except Exception as e:
         log_print(f"[WARN] Category detection failed: {e}")
     
-    # Fallback to licence if detection fails
-    log_print("[INFO] Using fallback category: licence")
-    return "licence", 0.5
+    # Fallback to license if detection fails
+    log_print("[INFO] Using fallback category: license")
+    return "license", 0.5

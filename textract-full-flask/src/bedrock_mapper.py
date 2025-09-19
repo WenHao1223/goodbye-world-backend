@@ -14,7 +14,7 @@ def log_print(msg):
     print(msg)
     log_output.write(msg + "\n") 
 
-def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passport"]):
+def get_system_prompt(category: Literal["license", "receipt", "idcard", "passport"]):
     prompt_path = Path(__file__).parent / "prompts" / f"{category}.txt"
     log_print(f"[INFO] Using prompt: {prompt_path}")
     if prompt_path.exists():
@@ -23,7 +23,7 @@ def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passpor
     else:
         sys.exit(f"[ERROR] Prompt file {prompt_path} not found.")
 
-def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: str | None = None):
+def extract_fields(textract_log: str, category: Literal["license", "receipt", "idcard", "passport"], region: str, profile: str | None = None):
     session_kwargs = {"region_name": region}
     if profile:
         session_kwargs["profile_name"] = profile

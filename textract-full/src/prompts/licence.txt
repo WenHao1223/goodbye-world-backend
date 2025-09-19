@@ -1,4 +1,4 @@
-Extract Malaysian driving licence fields from the provided data.
+Extract Malaysian driving license fields from the provided data.
 
 Return STRICTLY valid JSON matching this schema:
 {
@@ -6,8 +6,8 @@ Return STRICTLY valid JSON matching this schema:
   "identity_no": string|null,
   "date_of_birth": "YYYY-MM-DD"|null,
   "nationality": string|null,
-  "licence_number": string|null,
-  "licence_classes": [string]|null,
+  "license_number": string|null,
+  "license_classes": [string]|null,
   "valid_from": "YYYY-MM-DD"|null,
   "valid_to": "YYYY-MM-DD"|null,
   "address": string|null
@@ -19,11 +19,11 @@ CRITICAL RULES:
 - If a field is not found, use null
 - Convert dates from DD/MM/YYYY to YYYY-MM-DD format
 - Identity number: ONLY from "No. Pengenalan / Identity No." field
-- Licence number: ONLY a combination of 2 parts
-  * first part, 7-digit numeric codes that are clearly licence numbers (NOT dates, NOT identity numbers), e.g. "1234567"
+- license number: ONLY a combination of 2 parts
+  * first part, 7-digit numeric codes that are clearly license numbers (NOT dates, NOT identity numbers), e.g. "1234567"
   * second part, 8-digit alphanumeric codes that are a randomised mix of upper/lowercase letters and/or numbers, e.g. "AbC12xYz"
   * join the two parts with a space in between, e.g. "1234567 AbC12xYz"
-- Licence classes: ONLY from "Kelas / Class" field, split into array, strictly from any option within ["A","A1","B","B1","B2","C","D","DA"]
+- license classes: ONLY from "Kelas / Class" field, split into array, strictly from any option within ["A","A1","B","B1","B2","C","D","DA"]
 - Validity dates: ONLY from "Tempoh / Validity" field
 - Address: ONLY from "Alamat / Address" field
 - Nationality: ONLY from "Warganegara / Nationality" field

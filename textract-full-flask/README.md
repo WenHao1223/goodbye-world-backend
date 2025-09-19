@@ -16,22 +16,22 @@ uv sync
 .venv\Scripts\activate
 
 # Run the CLI
-python cli.py --file path/to/image.jpg --mode tfbq --category licence --region us-east-1 --profile your-profile
+python cli.py --file path/to/image.jpg --mode tfbq --category license --region us-east-1 --profile your-profile
 ```
 
 ### Arguments
 
 - `--file`: Path to input file (JPEG/PNG/PDF)
 - `--mode`: Analysis mode - combine letters: t(ext), f(orms), b(tables), q(uery) (default: tfbq)
-- `--category`: Document category for queries: licence, receipt, idcard, passport
+- `--category`: Document category for queries: license, receipt, idcard, passport
 - `--region`: AWS region (default: us-east-1)
 - `--profile`: AWS profile name
 
 ### Examples
 
 ```bash
-# Analyze a driving licence
-python cli.py --file media/licence.jpeg --mode tfbq --category licence --region us-east-1 --profile greataihackathon-personal
+# Analyze a driving license
+python cli.py --file media/license.jpeg --mode tfbq --category license --region us-east-1 --profile greataihackathon-personal
 
 # Analyze a receipt with text and forms only
 python cli.py --file media/receipt.pdf --mode tf --category receipt --region us-east-1 --profile greataihackathon-personal
@@ -58,9 +58,9 @@ uv run python api.py
 Access web interface at `http://localhost:5000` or use curl:
 
 ```bash
-# Analyze a driving licence via API
-curl -X POST -F "file=@media/licence.jpeg" \
-     -F "mode=tfbq" -F "category=licence" -F "region=us-east-1" \
+# Analyze a driving license via API
+curl -X POST -F "file=@media/license.jpeg" \
+     -F "mode=tfbq" -F "category=license" -F "region=us-east-1" \
      -F "aws_access_key_id=YOUR_ACCESS_KEY" \
      -F "aws_secret_access_key=YOUR_SECRET_KEY" \
      http://localhost:5000/analyze

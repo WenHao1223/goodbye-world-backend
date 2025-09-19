@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--mode", required=False, default="tfbq",
                         help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
     parser.add_argument("--category", required=False, default=None,
-                        choices=["licence", "receipt", "bank-receipt", "idcard", "passport"],
+                        choices=["license", "receipt", "bank-receipt", "idcard", "passport"],
                         help="Document category for queries and extraction (auto-detected if not provided)")
     parser.add_argument("--queries", required=False, default=None,
                         help="Custom queries separated by semicolons (e.g., 'What is the name?;What is the date?')")
@@ -128,7 +128,7 @@ def main():
             textract_log = log_output.getvalue()
 
             # Use detected/provided category or default
-            category_for_bedrock = category_to_use if category_to_use else "licence"
+            category_for_bedrock = category_to_use if category_to_use else "license"
 
             extracted_data, output_file = run_bedrock_extraction(
                 textract_log, category_for_bedrock, args.region, args.profile, 

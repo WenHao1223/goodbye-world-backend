@@ -12,7 +12,7 @@ def test_auto_detection():
     
     # Test files (assuming they exist in media directory)
     test_files = [
-        "media/licence.jpeg",
+        "media/license.jpeg",
         # Add other test files as available
     ]
     

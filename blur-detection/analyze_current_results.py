@@ -5,7 +5,7 @@ import json
 textract_log = """
 text = "LESEN HICMAND"  | confidence = 36.07
 text = "."  | confidence = 55.19
-text = "LICENCE"  | confidence = 24.38
+text = "license"  | confidence = 24.38
 text = "MALAYSIA"  | confidence = 99.92
 text = "BERKUATKUAI"  | confidence = 67.64
 text = "LIM WEN HAD"  | confidence = 82.15

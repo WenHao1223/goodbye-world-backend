@@ -22,13 +22,13 @@ uv sync
 
 ```bash
 # Analyze a driver's license locally
-uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
+uv run python cli.py --file media/license.jpeg --mode tfbq --category license
 
 # Test Lambda function locally
 uv run python local_test.py
 
 # Test deployed Lambda API
-uv run python test_lambda.py --api-url YOUR_API_URL --file media/licence.jpeg --mode tfbq --category licence
+uv run python test_lambda.py --api-url YOUR_API_URL --file media/license.jpeg --mode tfbq --category license
 ```
 
 ## 📋 Table of Contents
@@ -61,7 +61,7 @@ uv run python cli.py --file <path> --mode <mode> [options]
 | ------------ | --------------------------------------------------------- | ----------- | -------- |
 | `--file`     | Path to input file (JPEG/PNG/PDF)                         | -           | ✅       |
 | `--mode`     | Analysis mode: t(ext), f(orms), b(tables), q(uery)        | `tfbq`      | ❌       |
-| `--category` | Document type: `licence`, `receipt`, `bank-receipt`, `idcard`, `passport` (auto-detected if not provided) | -           | ❌       |
+| `--category` | Document type: `license`, `receipt`, `bank-receipt`, `idcard`, `passport` (auto-detected if not provided) | -           | ❌       |
 | `--queries`  | Custom queries separated by semicolons or newlines        | -           | ❌       |
 | `--prompt`   | Custom prompt for Bedrock AI extraction                   | -           | ❌       |
 | `--custom`   | Use custom queries/prompts even if category files exist   | `False`     | ❌       |
@@ -72,19 +72,19 @@ uv run python cli.py --file <path> --mode <mode> [options]
 
 ```bash
 # Full analysis with auto-detection (no category needed)
-uv run python cli.py --file media/licence.jpeg --mode tfbq --region us-east-1
+uv run python cli.py --file media/license.jpeg --mode tfbq --region us-east-1
 
 # Full analysis of a driver's license (explicit category)
-uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence --region us-east-1
+uv run python cli.py --file media/license.jpeg --mode tfbq --category license --region us-east-1
 
 # Text extraction only with blur detection
-uv run python cli.py --file media/licence.jpeg --mode t --region us-east-1
+uv run python cli.py --file media/license.jpeg --mode t --region us-east-1
 
 # Forms and tables analysis
-uv run python cli.py --file media/licence.jpeg --mode fb --region us-east-1
+uv run python cli.py --file media/license.jpeg --mode fb --region us-east-1
 
 # Auto-detection with custom queries/prompts
-uv run python cli.py --file media/licence.jpeg --mode tfbq --custom --queries "What is the issuing authority?" --region us-east-1
+uv run python cli.py --file media/license.jpeg --mode tfbq --custom --queries "What is the issuing authority?" --region us-east-1
 ```
 
 ## ☁️ Lambda API
@@ -197,12 +197,12 @@ textract-full/
 │   ├── blur_detection.py         # Blur detection logic
 │   ├── logger.py                 # Logging utilities
 │   ├── prompts/                  # Bedrock prompts
-│   │   ├── licence.txt
+│   │   ├── license.txt
 │   │   ├── receipt.txt
 │   │   ├── idcard.txt
 │   │   └── passport.txt
 │   └── queries/                  # Textract queries
-│       ├── licence.json
+│       ├── license.json
 │       ├── receipt.json
 │       ├── idcard.json
 │       └── passport.json
@@ -241,7 +241,7 @@ textract-full/
 uv sync
 
 # Run local analysis
-uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
+uv run python cli.py --file media/license.jpeg --mode tfbq --category license
 
 # Test Lambda locally
 uv run python local_test.py
@@ -250,7 +250,7 @@ uv run python local_test.py
 serverless deploy --region us-east-1
 
 # Test deployed API
-uv run python test_lambda.py --api-url YOUR_API_URL --file media/licence.jpeg --mode tfbq --category licence
+uv run python test_lambda.py --api-url YOUR_API_URL --file media/license.jpeg --mode tfbq --category license
 
 # Create web test interface
 uv run python test_lambda.py --create-html
@@ -269,29 +269,29 @@ uv run python cli.py --file media/document.pdf --mode f
 uv run python cli.py --file media/document.pdf --mode b
 
 # Queries only (requires category)
-uv run python cli.py --file media/licence.jpeg --mode q --category licence
+uv run python cli.py --file media/license.jpeg --mode q --category license
 
 # Custom queries only
-uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the issuing authority?;What is the photo quality?"
+uv run python cli.py --file media/license.jpeg --mode q --queries "What is the issuing authority?;What is the photo quality?"
 
 # Category + custom queries combined
-uv run python cli.py --file media/licence.jpeg --mode q --category licence --queries "What is the issuing authority?"
+uv run python cli.py --file media/license.jpeg --mode q --category license --queries "What is the issuing authority?"
 
 # Custom prompt for Bedrock AI extraction
-uv run python cli.py --file media/licence.jpeg --mode tfb --prompt "Extract name, birth date, license number, and expiry date as JSON"
+uv run python cli.py --file media/license.jpeg --mode tfb --prompt "Extract name, birth date, license number, and expiry date as JSON"
 
 # All analysis types
-uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
+uv run python cli.py --file media/license.jpeg --mode tfbq --category license
 ```
 
 ### Document Categories
 
 ```bash
 # Auto-detected analysis (recommended)
-uv run python cli.py --file media/licence.jpeg --mode tfbq
+uv run python cli.py --file media/license.jpeg --mode tfbq
 
 # License analysis (explicit category)
-uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
+uv run python cli.py --file media/license.jpeg --mode tfbq --category license
 
 # Receipt analysis with auto-detection
 uv run python cli.py --file media/receipt.pdf --mode tfbq
@@ -322,7 +322,7 @@ reader.onload = async function(e) {
       file_content: fileContent,
       filename: file.name,
       mode: 'tfbq',
-      category: 'licence',
+      category: 'license',
       region: 'us-east-1'
     })
   });
@@ -358,7 +358,7 @@ import requests
 import base64
 
 # Read and encode file
-with open('media/licence.jpeg', 'rb') as f:
+with open('media/license.jpeg', 'rb') as f:
     file_content = base64.b64encode(f.read()).decode('utf-8')
 
 # Make API call
@@ -366,9 +366,9 @@ response = requests.post(
     'https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/analyze',
     json={
         'file_content': file_content,
-        'filename': 'licence.jpeg',
+        'filename': 'license.jpeg',
         'mode': 'tfbq',
-        'category': 'licence',
+        'category': 'license',
         'region': 'us-east-1'
     }
 )
@@ -386,16 +386,16 @@ if 'blur_analysis' in result:
 ### cURL
 ```bash
 # Encode file to base64
-FILE_CONTENT=$(base64 -w 0 media/licence.jpeg)
+FILE_CONTENT=$(base64 -w 0 media/license.jpeg)
 
 # Make API call
 curl -X POST https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/analyze \
   -H "Content-Type: application/json" \
   -d "{
     \"file_content\": \"$FILE_CONTENT\",
-    \"filename\": \"licence.jpeg\",
+    \"filename\": \"license.jpeg\",
     \"mode\": \"tfbq\",
-    \"category\": \"licence\",
+    \"category\": \"license\",
     \"region\": \"us-east-1\"
   }"
 ```
@@ -606,7 +606,7 @@ uv run python cli.py --file document.pdf --mode tfbq
 4. **Results Saved**: Detection results saved to `category_detection.json`
 
 **Supported Categories:**
-- `licence` - Driver's license, driving permits
+- `license` - Driver's license, driving permits
 - `receipt` - Purchase receipts, invoices from retail stores
 - `bank-receipt` - Bank transaction receipts, ATM receipts, bank statements
 - `idcard` - Identity cards, national IDs, employee IDs
@@ -683,19 +683,19 @@ uv run python cli.py --file bank-receipt.pdf --mode q --category bank-receipt --
 ### CLI Commands
 ```bash
 # Auto-detected analysis (recommended)
-uv run python cli.py --file media/licence.jpeg --mode tfbq
+uv run python cli.py --file media/license.jpeg --mode tfbq
 
 # Basic text extraction
-uv run python cli.py --file media/licence.jpeg --mode t
+uv run python cli.py --file media/license.jpeg --mode t
 
 # Full analysis with explicit category
-uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
+uv run python cli.py --file media/license.jpeg --mode tfbq --category license
 
 # Forms and tables only
-uv run python cli.py --file media/licence.jpeg --mode fb
+uv run python cli.py --file media/license.jpeg --mode fb
 
 # Custom queries with auto-detection
-uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the name?"
+uv run python cli.py --file media/license.jpeg --mode q --queries "What is the name?"
 ```
 
 ### Mode Parameters
@@ -709,7 +709,7 @@ uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the n
 - **Auto-detected** - AI automatically detects document type (recommended)
 - `receipt` - Purchase receipts, invoices from retail stores
 - `bank-receipt` - Bank transaction receipts, ATM receipts, bank statements
-- `licence` - Driver's licenses, driving permits
+- `license` - Driver's licenses, driving permits
 - `idcard` - Identity cards, national IDs, employee IDs
 - `passport` - Passports, travel documents
 
@@ -782,7 +782,7 @@ uv run python cli.py --file document.pdf --mode tfbq --queries "Additional quest
 uv run python cli.py --file document.pdf --mode tfb --category receipt --prompt "Custom extraction prompt"
 
 # Custom mode overriding category files
-uv run python cli.py --file document.pdf --mode tfbq --category licence --custom --queries "Custom questions" --prompt "Custom prompt"
+uv run python cli.py --file document.pdf --mode tfbq --category license --custom --queries "Custom questions" --prompt "Custom prompt"
 
 # Bank receipt with required custom content
 uv run python cli.py --file bank-receipt.pdf --mode q --category bank-receipt --custom --queries "What is the transaction amount?"
@@ -818,7 +818,7 @@ export AWS_PROFILE=default
 uv run python test_auto_detection.py
 
 # Manual testing
-uv run python cli.py --file media/licence.jpeg --mode tfbq
+uv run python cli.py --file media/license.jpeg --mode tfbq
 # Check log/{filename}_{timestamp}/category_detection.json for results
 ```
 
@@ -839,14 +839,14 @@ Queries are questions that Textract will attempt to answer based on the document
 2. **Use Clear Language**: Simple, direct questions work best
    ```
    ✅ Good: "What is the full name?"
-   ✅ Good: "What is the licence class?"
+   ✅ Good: "What is the license class?"
    ✅ Good: "What is the address?"
    ```
 
 3. **Avoid Duplicates**: Don't repeat queries from category files
    ```bash
    # Check existing queries first
-   cat src/queries/licence.txt
+   cat src/queries/license.txt
    ```
 
 4. **Format Correctly**: Separate multiple queries with semicolons or new lines
@@ -890,8 +890,8 @@ Extract the following information from this driver's license text and return as 
   "identity_no": "Identity/IC number",
   "date_of_birth": "Date of birth in YYYY-MM-DD format",
   "nationality": "Nationality",
-  "licence_number": "License number",
-  "licence_classes": ["Array of license classes"],
+  "license_number": "License number",
+  "license_classes": ["Array of license classes"],
   "valid_from": "Valid from date in YYYY-MM-DD format",
   "valid_to": "Valid to date in YYYY-MM-DD format",
   "address": "Full address"
@@ -910,7 +910,7 @@ Rules:
 uv run python cli.py --file document.pdf --mode q --queries "Your question?"
 
 # Category + custom queries
-uv run python cli.py --file document.pdf --mode tfbq --category licence --queries "Additional question?"
+uv run python cli.py --file document.pdf --mode tfbq --category license --queries "Additional question?"
 
 # Custom prompt for AI extraction
 uv run python cli.py --file document.pdf --mode tfb --prompt "Extract specific fields as JSON"
@@ -1016,7 +1016,7 @@ npm install -g serverless serverless-python-requirements
 uv run python local_test.py
 
 # Test deployed API
-uv run python test_lambda.py --api-url YOUR_URL --file media/licence.jpeg --mode t
+uv run python test_lambda.py --api-url YOUR_URL --file media/license.jpeg --mode t
 
 # Check API Gateway logs
 aws logs describe-log-groups --log-group-name-prefix /aws/lambda/textract-full-api

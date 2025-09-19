@@ -119,7 +119,7 @@ def analyze_tables(client, file_bytes):
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Table analysis failed: {e}")
     
-def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"]):
+def analyze_queries(client, file_bytes, category: Literal["license", "receipt", "idcard", "passport"]):
     try:
         queries_dir = Path(__file__).parent / "queries"
         queries_file = queries_dir / f"{category}.json" if category else None

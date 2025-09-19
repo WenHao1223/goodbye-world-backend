@@ -137,7 +137,7 @@ def analyze_tables(client, file_bytes):
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Table analysis failed: {e}")
     
-def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"]):
+def analyze_queries(client, file_bytes, category: Literal["license", "receipt", "idcard", "passport"]):
     try:
         queries_dir = Path("aws-textract/queries")
         queries_file = queries_dir / f"{category}.json" if category else None
@@ -178,20 +178,20 @@ def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", 
     
 
 # Run from command line with these:
-# python textract_enhanced_local.py --file /path/to/input.jpg --region us-east-1 --mode tfbq --category licence
+# python textract_enhanced_local.py --file /path/to/input.jpg --region us-east-1 --mode tfbq --category license
 # arguments:
 # --file: path to the file (JPEG/PNG/PDF single page)
 # --region: AWS region, e.g., us-east-1
 # --profile: AWS profile name to use (optional)
 # --mode: analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq
-# --category: document category for queries: licence, receipt, sop
+# --category: document category for queries: license, receipt, sop
 def main():
     parser = argparse.ArgumentParser(description="Run AWS Textract locally with text and form analysis.")
     parser.add_argument("--file", required=True, type=Path, help="Path to the file file (JPEG/PNG/PDF single page).")
     parser.add_argument("--mode", required=False, default="t",
                         help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
-    parser.add_argument("--category", required=False,  default=None, choices=["licence", "receipt", "idcard", "passport"],
-                        help="category of document to extract: licence, receipt, idcard, passport")
+    parser.add_argument("--category", required=False,  default=None, choices=["license", "receipt", "idcard", "passport"],
+                        help="category of document to extract: license, receipt, idcard, passport")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region, e.g., us-east-1")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     args = parser.parse_args()

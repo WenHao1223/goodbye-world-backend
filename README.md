@@ -18,14 +18,14 @@ aws sts get-caller-identity
 # Run
 ## Extract Text
 `--mode`: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq
-`--category`: licence-front, licence-back
+`--category`: license-front, license-back
 ```bash
 python aws-textract/textract_local.py --image aws-textract/files/paystub.jpg --region us-east-1 --profile greataihackathon-personal
 ```
 
 ```bash
-python aws-textract/textract_enhanced_local.py --file aws-textract/files/licence.jpeg --mode tfbq --category licence --region us-east-1 --profile greataihackathon-personal 
-python aws-textract/textract_enhanced_local.py --file aws-textract/files/mingjia-licence.jpg --mode tf --region us-east-1 --profile greataihackathon-personal
+python aws-textract/textract_enhanced_local.py --file aws-textract/files/license.jpeg --mode tfbq --category license --region us-east-1 --profile greataihackathon-personal 
+python aws-textract/textract_enhanced_local.py --file aws-textract/files/mingjia-license.jpg --mode tf --region us-east-1 --profile greataihackathon-personal
 python aws-textract/textract_enhanced_local.py --file aws-textract/files/blur.jpg --mode tf --region us-east-1 --profile greataihackathon-personal
 python aws-textract/textract_enhanced_local.py --file aws-textract/files/bank-receipt.pdf --mode tfbq --category receipt --region us-east-1 --profile greataihackathon-personal
 ```
@@ -47,9 +47,9 @@ python aws-bedrock/check-bedrock-models.py --region us-east-1 --profile greataih
 
 ## Mapper
 ```bash
-python aws-bedrock/bedrock-mapper.py --files log/licence_20250916_231316/text.json log/licence_20250916_231316/forms.json --category licence --region us-east-1 --profile greataihackathon-personal
-python aws-bedrock/bedrock-mapper.py --files log/licence_20250917_001133/textract.log --category licence --region us-east-1 --profile greataihackathon-personal
-python aws-bedrock/bedrock-mapper.py --files log/mingjia-licence_20250917_001506/textract.log --category licence --region us-east-1 --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/license_20250916_231316/text.json log/license_20250916_231316/forms.json --category license --region us-east-1 --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/license_20250917_001133/textract.log --category license --region us-east-1 --profile greataihackathon-personal
+python aws-bedrock/bedrock-mapper.py --files log/mingjia-license_20250917_001506/textract.log --category license --region us-east-1 --profile greataihackathon-personal
 ```
 
 # Final

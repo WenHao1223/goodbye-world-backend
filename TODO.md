@@ -25,7 +25,7 @@
  5. Return true / fail to process payment
 
 ## Checklist
- 1. Canonical Licence scheme + mapper from current JSON (/)
+ 1. Canonical license scheme + mapper from current JSON (/)
  2. Validation module (formats, confidence, expiry)
  3. Face match + (optional) liveness step in the chat flow.
  4. Case creation + summons lookup integration.

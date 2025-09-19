@@ -143,7 +143,7 @@ def create_test_html():
                 <label for="category">Document Category (optional - auto-detected if not provided):</label>
                 <select id="category">
                     <option value="">Auto-detect (recommended)</option>
-                    <option value="licence">Driver's License</option>
+                    <option value="license">Driver's License</option>
                     <option value="receipt">Receipt/Invoice</option>
                     <option value="bank-receipt">Bank Receipt/Statement</option>
                     <option value="idcard">ID Card</option>

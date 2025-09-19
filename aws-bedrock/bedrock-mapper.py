@@ -19,7 +19,7 @@ def load_textract_json(file_path: Path):
     with open(file_path, "r", encoding="latin-1") as f:
         return f.read()
 
-def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passport"]):
+def get_system_prompt(category: Literal["license", "receipt", "idcard", "passport"]):
     prompt_path = Path(f"aws-bedrock/prompts/{category}.txt")
     log_print(f"[INFO] Using prompt: {prompt_path}")
     if prompt_path.exists():
@@ -28,7 +28,7 @@ def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passpor
     else:
         sys.exit(f"[ERROR] Prompt file {prompt_path} not found.")
 
-def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: str | None = None):
+def extract_fields(textract_log: str, category: Literal["license", "receipt", "idcard", "passport"], region: str, profile: str | None = None):
     session_kwargs = {"region_name": region}
     if profile:
         session_kwargs["profile_name"] = profile
@@ -70,10 +70,10 @@ def extract_fields(textract_log: str, category: Literal["licence", "receipt", "i
     return {}
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract Malaysian driving licence fields from Textract JSON")
+    parser = argparse.ArgumentParser(description="Extract Malaysian driving license fields from Textract JSON")
     parser.add_argument("--files", nargs="+", required=True, help="Path(s) to the Textract JSON file(s)")
     parser.add_argument("--category", required=False, default=None,
-                        choices=["licence", "receipt", "idcard", "passport"], help="category of document to extract: licence, receipt, idcard, passport")
+                        choices=["license", "receipt", "idcard", "passport"], help="category of document to extract: license, receipt, idcard, passport")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region, e.g., us-east-1")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name to use (optional).")
     args = parser.parse_args()

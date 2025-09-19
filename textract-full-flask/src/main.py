@@ -19,7 +19,7 @@ def main():
     parser.add_argument("--mode", required=False, default="tfbq", 
                         help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
     parser.add_argument("--category", required=False, default=None, 
-                        choices=["licence", "receipt", "idcard", "passport"],
+                        choices=["license", "receipt", "idcard", "passport"],
                         help="Document category for queries and extraction")
     parser.add_argument("--region", required=False, default="us-east-1", help="AWS region")
     parser.add_argument("--profile", required=False, default=None, help="AWS profile name") # False to enable env var usage
