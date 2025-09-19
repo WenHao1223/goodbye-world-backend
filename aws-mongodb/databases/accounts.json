@@ -1,0 +1,24 @@
+{
+  "beneficiary_name": "Jabatan Pengangkutan Jalan Malaysia",
+  "beneficiary_account": "5123456789012345",
+  "beneficiary_bank": "Maybank",
+  "service": "JPJ",
+  "qr_link": "",
+  "active": true
+}
+{
+  "beneficiary_name": "Tenaga Nasional Berhad",
+  "beneficiary_account": "3987654321098765",
+  "beneficiary_bank": "CIMB Bank",
+  "service": "TNB",
+  "qr_link": "",
+  "active": true
+}
+{
+  "beneficiary_name": "Lim Wen Hao",
+  "beneficiary_account": "107228131548",
+  "beneficiary_bank": "Maybank",
+  "service": "JPJ",
+  "qr_link": "",
+  "active": true
+}

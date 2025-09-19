@@ -1,0 +1,21 @@
+{
+  "transaction_id": "TXN20250925001",
+  "reference_id": "TNG20250925ABC123",
+  "transaction_date": "2025-09-25T15:13:00Z",
+  "transaction_type": "TnG",
+  "amount": 311.90,
+  "currency": "MYR",
+  "fees": 0.00,
+  "status": "Successful",
+  "sender_bank": "Maybank",
+  "sender_account": "1234567890123456",
+  "sender_name": "Ali bin Abu",
+  "beneficiary_bank": "CIMB Bank",
+  "beneficiary_account": "3987654321098765",
+  "beneficiary_name": "Tenaga Nasional Berhad",
+  "service_type": "TNB",
+  "bill_reference": "1001234",
+  "payment_details": "Electricity Bill Payment",
+  "notes": "TnG payment for electricity bill",
+  "created_at": "2025-09-25T15:13:00Z"
+}

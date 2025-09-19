@@ -1,0 +1,73 @@
+{
+  "bill": {
+    "akaun": {
+      "no_akaun": "220001234512",
+      "no_kontrak": "1002000",
+      "deposit": 350.00,
+      "no_invois": "1001234",
+      "name": "Ali bin Abu",
+      "address": "E23A - 201 Sek 3, 53300 WP Kuala Lumpur"
+    },
+    "meta": {
+      "bil_semasa": {
+        "jumlah": 311.90,
+        "tarikh_bil": "03-10-2018",
+        "bayar_sebelum": "01-11-2018"
+      },
+      "butiran": {
+        "tunggakan": 0.00,
+        "caj_semasa": 311.88,
+        "penggenapan": 0.02
+      },
+      "bil_terdahulu": {
+        "jumlah": 526.85,
+        "tarikh_bil": "02-08-2018"
+      },
+      "bayaran_akhir": {
+        "jumlah": 526.85,
+        "tarikh_bayar": "30-08-2018"
+      },
+      "jenis_bacaan": "Bacaan Sebenar"
+    },
+    "tarif": {
+      "tempoh": {
+        "dari": "03-09-2018",
+        "hingga": "03-10-2018",
+        "hari": 31
+      },
+      "jenis": "A: Kediaman",
+      "faktor_prorata": 1.00,
+      "blok": [
+        { "kWh": 200, "kadar": 0.218, "jumlah": 43.60 },
+        { "kWh": 100, "kadar": 0.334, "jumlah": 33.40 },
+        { "kWh": 300, "kadar": 0.516, "jumlah": 154.80 },
+        { "kWh": 130, "kadar": 0.546, "jumlah": 70.98 }
+      ],
+      "jumlah_kWh": 730,
+      "jumlah_amaun": 302.78
+    },
+    "caj": {
+      "kegunaan": {
+        "tidak_kena_ST": { "kWh": 600, "RM": 231.80 },
+        "kena_ST": { "kWh": 130, "RM": 70.98 },
+        "jumlah": { "kWh": 730, "RM": 302.78 }
+      },
+      "service_tax": 4.26,
+      "kwtbb": 4.84
+    },
+    "meter": {
+      "no_meter": 311201234,
+      "bacaan_dahulu": 28740,
+      "bacaan_semasa": 29200,
+      "kegunaan": 730,
+      "unit": "kWh"
+    }
+  },
+  "status": "paid",
+  "pembayaran": {
+    "jumlah": 311.90,
+    "tarikh_bayar": "25-09-2025",
+    "cara": "TnG",
+    "rujukan": "TNG20250925ABC123"
+  }
+}
