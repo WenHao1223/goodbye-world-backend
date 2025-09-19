@@ -61,14 +61,18 @@ uv run python cli.py --file <path> --mode <mode> [options]
 | ------------ | --------------------------------------------------------- | ----------- | -------- |
 | `--file`     | Path to input file (JPEG/PNG/PDF)                         | -           | ✅       |
 | `--mode`     | Analysis mode: t(ext), f(orms), b(tables), q(uery)        | `tfbq`      | ❌       |
-| `--category` | Document type: `licence`, `receipt`, `idcard`, `passport` | -           | ❌       |
+| `--category` | Document type: `licence`, `receipt`, `idcard`, `passport` (auto-detected if not provided) | -           | ❌       |
+| `--custom`   | Use custom queries/prompts even if category files exist   | `False`     | ❌       |
 | `--region`   | AWS region                                                | `us-east-1` | ❌       |
 | `--profile`  | AWS profile name                                          | `default`   | ❌       |
 
 ### Common Local Commands
 
 ```bash
-# Full analysis of a driver's license
+# Full analysis with auto-detection (no category needed)
+uv run python cli.py --file media/licence.jpeg --mode tfbq --region us-east-1
+
+# Full analysis of a driver's license (explicit category)
 uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence --region us-east-1
 
 # Text extraction only with blur detection
@@ -77,8 +81,8 @@ uv run python cli.py --file media/licence.jpeg --mode t --region us-east-1
 # Forms and tables analysis
 uv run python cli.py --file media/licence.jpeg --mode fb --region us-east-1
 
-# License analysis with specific profile
-uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence --profile your-profile
+# Auto-detection with custom queries/prompts
+uv run python cli.py --file media/licence.jpeg --mode tfbq --custom --queries "What is the issuing authority?" --region us-east-1
 ```
 
 ## ☁️ Lambda API
@@ -137,6 +141,7 @@ curl -X POST https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/analyze
     "filename": "document.pdf",
     "mode": "tfbq",
     "category": "receipt",
+    "custom": false,
     "region": "us-east-1"
   }'
 ```
@@ -155,6 +160,7 @@ curl https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/health
 - **Form Analysis**: Key-value pair extraction
 - **Table Analysis**: Structured table data extraction
 - **Query Analysis**: Answer specific questions about documents
+- **Auto Category Detection**: Automatically detect document type using AI
 
 ### 2. **Intelligent Blur Detection**
 
@@ -168,6 +174,8 @@ curl https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/health
 
 - **Structured Extraction**: Convert documents to structured JSON
 - **Document Categories**: Specialized prompts for different document types
+- **Auto Category Detection**: AI-powered document classification
+- **Custom Mode**: Override category-based prompts and queries
 - **AI-Powered**: Uses Claude AI for intelligent data extraction
 
 ### 4. **Dual Deployment Options**
@@ -202,6 +210,14 @@ textract-full/
 │   └── DEVELOPMENT.md            # Development guide
 ├── media/                        # Sample test files
 ├── log/                          # Local analysis results
+│   └── {filename}_{timestamp}/   # Individual analysis logs
+│       ├── textract.log          # Complete processing log
+│       ├── text.json             # Text detection results
+│       ├── forms.json            # Form analysis results
+│       ├── tables.json           # Table analysis results
+│       ├── queries.json          # Query analysis results
+│       ├── blur_analysis.json    # Blur detection results
+│       └── category_detection.json # Auto-detection results
 ├── output/                       # Extracted structured data
 ├── cli.py                        # CLI entry point
 ├── lambda_handler.py             # Lambda function handler
@@ -269,16 +285,19 @@ uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
 ### Document Categories
 
 ```bash
-# License analysis (primary example)
+# Auto-detected analysis (recommended)
+uv run python cli.py --file media/licence.jpeg --mode tfbq
+
+# License analysis (explicit category)
 uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
 
-# Receipt analysis
-uv run python cli.py --file media/receipt.pdf --mode tfbq --category receipt
+# Receipt analysis with auto-detection
+uv run python cli.py --file media/receipt.pdf --mode tfbq
 
-# ID card analysis
-uv run python cli.py --file media/idcard.jpg --mode tfbq --category idcard
+# ID card analysis with custom mode
+uv run python cli.py --file media/idcard.jpg --mode tfbq --custom
 
-# Passport analysis
+# Passport analysis (explicit category)
 uv run python cli.py --file media/passport.jpg --mode tfbq --category passport
 ```
 
@@ -532,6 +551,11 @@ Overall: CLEAR (confidence: high)
   "queries": {
     "What is the amount?": "$100.00"
   },
+  "category_detection": {
+    "detected_category": "receipt",
+    "confidence": 0.95,
+    "timestamp": "20250109_143022"
+  },
   "blur_analysis": {
     "textract_analysis": {
       "median_confidence": 99.89,
@@ -560,6 +584,43 @@ Overall: CLEAR (confidence: high)
   "stdout": "...",
   "stderr": "..."
 }
+```
+
+## 🔄 Auto-Detection Features
+
+### Document Category Detection
+
+The system now automatically detects document categories using AI analysis:
+
+```bash
+# Auto-detection (no --category needed)
+uv run python cli.py --file document.pdf --mode tfbq
+
+# The system will:
+# 1. Run initial text/forms/tables analysis
+# 2. Use AI to classify the document type
+# 3. Apply appropriate queries and prompts
+# 4. Save detection results to category_detection.json
+```
+
+### Detection Process
+
+1. **Initial Analysis**: Extract text, forms, and tables
+2. **AI Classification**: Use Bedrock to analyze content and classify
+3. **Category Assignment**: Apply detected category for queries/prompts
+4. **Fallback Handling**: Use custom queries/prompts if category files missing
+
+### Custom Mode
+
+```bash
+# Force custom mode (ignore category files)
+uv run python cli.py --file document.pdf --mode tfbq --custom
+
+# Custom with explicit queries
+uv run python cli.py --file document.pdf --mode q --custom --queries "What is the date?"
+
+# Custom with explicit prompt
+uv run python cli.py --file document.pdf --mode tfb --custom --prompt "Extract all dates as JSON"
 ```
 
 ## 🔧 Configuration
@@ -600,17 +661,20 @@ Overall: CLEAR (confidence: high)
 
 ### CLI Commands
 ```bash
+# Auto-detected analysis (recommended)
+uv run python cli.py --file media/licence.jpeg --mode tfbq
+
 # Basic text extraction
 uv run python cli.py --file media/licence.jpeg --mode t
 
-# Full analysis with AI extraction
+# Full analysis with explicit category
 uv run python cli.py --file media/licence.jpeg --mode tfbq --category licence
 
 # Forms and tables only
 uv run python cli.py --file media/licence.jpeg --mode fb
 
-# Custom queries
-uv run python cli.py --file media/licence.jpeg --mode q --category licence
+# Custom queries with auto-detection
+uv run python cli.py --file media/licence.jpeg --mode q --queries "What is the name?"
 ```
 
 ### Mode Parameters
@@ -621,10 +685,17 @@ uv run python cli.py --file media/licence.jpeg --mode q --category licence
 - `tfbq` - All analysis types
 
 ### Categories (for queries and AI extraction)
+- **Auto-detected** - AI automatically detects document type (recommended)
 - `receipt` - Receipt/invoice analysis
+- `bank-receipt` - Bank transaction receipt, ATM receipt, or bank statement
 - `licence` - Driver's license analysis
 - `idcard` - ID card analysis
 - `passport` - Passport analysis
+
+### Custom Mode
+- `--custom` - Use custom queries/prompts even when category files exist
+- Enables development and testing of new document types
+- Overrides category-based prompts and queries
 
 ### Custom Queries
 You can provide custom queries in addition to or instead of category-based queries:
@@ -682,6 +753,16 @@ uv run python cli.py --file media/licence.jpeg --mode tfb --prompt "Extract the 
 ```bash
 export AWS_REGION=us-east-1
 export AWS_PROFILE=default
+```
+
+### Testing Auto-Detection
+```bash
+# Run the test script
+uv run python test_auto_detection.py
+
+# Manual testing
+uv run python cli.py --file media/licence.jpeg --mode tfbq
+# Check log/{filename}_{timestamp}/category_detection.json for results
 ```
 
 ## 📝 Developer Guide: Custom Queries and Prompts

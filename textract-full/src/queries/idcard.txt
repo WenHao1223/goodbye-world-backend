@@ -1,0 +1,6 @@
+What is the full name?
+What is the ID number?
+What is the date of birth?
+What is the nationality?
+What is the issuing authority?
+What is the expiry date?

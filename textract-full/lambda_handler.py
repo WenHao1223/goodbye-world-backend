@@ -24,9 +24,10 @@ def lambda_handler(event, context):
             "file_content": "base64-encoded file content",
             "filename": "original filename",
             "mode": "tfbq" (optional, default: "tfbq"),
-            "category": "licence|receipt|idcard|passport" (optional),
+            "category": "licence|receipt|idcard|passport" (optional, auto-detected if not provided),
             "queries": "custom queries separated by semicolons" (optional),
             "prompt": "custom prompt for Bedrock AI extraction" (optional),
+            "custom": true/false (optional, default: false),
             "region": "us-east-1" (optional, default: "us-east-1")
         }
     }
@@ -86,6 +87,7 @@ def lambda_handler(event, context):
         category = request_data.get('category')
         queries = request_data.get('queries')
         prompt = request_data.get('prompt')
+        custom = request_data.get('custom', False)
         region = request_data.get('region', 'us-east-1')
         
         # Decode file content
@@ -120,6 +122,8 @@ def lambda_handler(event, context):
                 cmd.extend(['--queries', queries])
             if prompt:
                 cmd.extend(['--prompt', prompt])
+            if custom:
+                cmd.append('--custom')
 
             # Run CLI command
             result = subprocess.run(
@@ -156,18 +160,20 @@ def lambda_handler(event, context):
                 latest_log = max(log_dir.glob('*'), key=os.path.getctime)
                 
                 # Read JSON files
-                for json_file in ['text.json', 'forms.json', 'tables.json', 'queries.json', 'blur_analysis.json']:
+                for json_file in ['text.json', 'forms.json', 'tables.json', 'queries.json', 'blur_analysis.json', 'category_detection.json']:
                     file_path = latest_log / json_file
                     if file_path.exists():
                         with open(file_path) as f:
                             if json_file == 'blur_analysis.json':
                                 response['blur_analysis'] = json.load(f)
+                            elif json_file == 'category_detection.json':
+                                response['category_detection'] = json.load(f)
                             else:
                                 response[json_file.replace('.json', '')] = json.load(f)
             
             # Find latest output file (for category-based or custom prompt extraction)
             output_dir = Path('/tmp/output')  # Use /tmp in Lambda
-            if output_dir.exists() and (category or prompt):
+            if output_dir.exists():
                 output_files = list(output_dir.glob('*.json'))
                 if output_files:
                     latest_output = max(output_files, key=os.path.getctime)
@@ -223,6 +229,7 @@ if __name__ == '__main__':
             "filename": "test.pdf",
             "mode": "tfbq",
             "category": "receipt",
+            "custom": false,
             "region": "us-east-1"
         })
     }

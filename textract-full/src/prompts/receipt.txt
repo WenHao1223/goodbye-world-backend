@@ -1,0 +1,20 @@
+Extract the following information from this receipt/invoice text and return as JSON:
+
+{
+  "merchant_name": "Name of the store/business",
+  "transaction_date": "Date of transaction in YYYY-MM-DD format",
+  "transaction_time": "Time of transaction if available",
+  "total_amount": "Total amount as number",
+  "tax_amount": "Tax amount as number",
+  "subtotal": "Subtotal before tax as number",
+  "payment_method": "Payment method used",
+  "items": ["Array of purchased items with descriptions"],
+  "receipt_number": "Receipt or transaction number",
+  "cashier": "Cashier name if available"
+}
+
+Rules:
+- Use null for missing information
+- Format dates as YYYY-MM-DD
+- Extract exact amounts as numbers without currency symbols
+- Return only valid JSON

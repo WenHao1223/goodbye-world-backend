@@ -120,7 +120,7 @@ def analyze_tables(client, file_bytes):
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Table analysis failed: {e}")
     
-def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", "idcard", "passport"] = None, custom_queries: str = None):
+def analyze_queries(client, file_bytes, category: str = None, custom_queries: str = None, use_custom: bool = False):
     try:
         queries_list = []
 
@@ -132,8 +132,8 @@ def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", 
             custom_query_texts = [q.strip() for q in re.split(r'[;\n]', custom_queries) if q.strip()]
             queries_list.extend([{"Text": query} for query in custom_query_texts])
 
-        # Handle category-based queries
-        if category:
+        # Handle category-based queries (only if not using custom mode or if no custom queries provided)
+        if category and (not use_custom or not custom_queries):
             queries_dir = Path(__file__).parent / "queries"
             queries_file = queries_dir / f"{category}.txt"
 
@@ -146,9 +146,14 @@ def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", 
                     queries_list.extend([{"Text": query} for query in category_query_texts])
             else:
                 log_print(f"[WARN] Queries file {queries_file} not found for category {category}")
+                if use_custom and not custom_queries:
+                    raise SystemExit(f"[ERROR] Custom mode enabled but no custom queries provided and no category file found for {category}")
 
         if not queries_list:
-            log_print(f"[WARN] No queries found. Using empty queries.")
+            if use_custom:
+                raise SystemExit(f"[ERROR] Custom mode enabled but no queries available (no custom queries provided and no category file found)")
+            else:
+                log_print(f"[WARN] No queries found. Using empty queries.")
 
         queries_config = {"Queries": queries_list}
         
@@ -178,7 +183,7 @@ def analyze_queries(client, file_bytes, category: Literal["licence", "receipt", 
     except (BotoCoreError, ClientError) as e:
         raise SystemExit(f"[ERROR] Query analysis failed: {e}")
 
-def run_textract(file_path: Path, mode: str, category: str, region: str, profile: str, timestamp: str, custom_queries: str = None):
+def run_textract(file_path: Path, mode: str, category: str, region: str, profile: str, timestamp: str, custom_queries: str = None, use_custom: bool = False):
     # Validate input file
     if not file_path.exists():
         raise SystemExit(f"[ERROR] File not found: {file_path}")
@@ -251,7 +256,7 @@ def run_textract(file_path: Path, mode: str, category: str, region: str, profile
 
     if 'q' in mode:
         log_print("\n=== QUERY ANALYSIS ===")
-        queries = analyze_queries(client, file_bytes, category, custom_queries)
+        queries = analyze_queries(client, file_bytes, category, custom_queries, use_custom)
         for question, answer in queries.items():
             log_print(f"Q: {question}")
             log_print(f"A: {answer}")

@@ -1,0 +1,23 @@
+Extract the following information from this passport text and return as JSON:
+
+{
+  "passport_number": "Passport number",
+  "full_name": "Full name of the passport holder",
+  "surname": "Surname/family name",
+  "given_names": "Given names",
+  "nationality": "Nationality",
+  "date_of_birth": "Date of birth in YYYY-MM-DD format",
+  "place_of_birth": "Place of birth",
+  "gender": "Gender (M/F)",
+  "issue_date": "Issue date in YYYY-MM-DD format",
+  "expiry_date": "Expiry date in YYYY-MM-DD format",
+  "issuing_authority": "Authority that issued the passport",
+  "country_code": "Country code (3-letter)",
+  "personal_number": "Personal number if available"
+}
+
+Rules:
+- Use null for missing information
+- Format dates as YYYY-MM-DD
+- Extract exact text, don't interpret
+- Return only valid JSON

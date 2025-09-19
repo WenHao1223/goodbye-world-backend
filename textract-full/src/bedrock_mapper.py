@@ -24,7 +24,7 @@ def get_system_prompt(category: Literal["licence", "receipt", "idcard", "passpor
     else:
         sys.exit(f"[ERROR] Prompt file {prompt_path} not found.")
 
-def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: Optional[str] = None, custom_prompt: str = None):
+def extract_fields(textract_log: str, category: Literal["licence", "receipt", "idcard", "passport"], region: str, profile: Optional[str] = None, custom_prompt: str = None, use_custom: bool = False):
     session_kwargs = {"region_name": region}
     if profile:
         session_kwargs["profile_name"] = profile
@@ -32,11 +32,23 @@ def extract_fields(textract_log: str, category: Literal["licence", "receipt", "i
     session = boto3.Session(**session_kwargs)
     bedrock = session.client("bedrock-runtime")
 
-    # Use custom prompt if provided, otherwise use category-based prompt
+    # Use custom prompt if provided, otherwise use category-based prompt (if available and not in custom mode)
     if custom_prompt:
         system_prompt = custom_prompt
+    elif use_custom:
+        # In custom mode without custom prompt, raise error if no category file exists
+        prompt_path = Path(__file__).parent / "prompts" / f"{category}.txt"
+        if not prompt_path.exists():
+            raise SystemExit(f"[ERROR] Custom mode enabled but no custom prompt provided and no category prompt file found for {category}")
+        system_prompt = "Extract all relevant information from this document and return as JSON with appropriate field names."
     else:
-        system_prompt = get_system_prompt(category)
+        # Check if category prompt file exists
+        prompt_path = Path(__file__).parent / "prompts" / f"{category}.txt"
+        if prompt_path.exists():
+            system_prompt = get_system_prompt(category)
+        else:
+            # Fallback to generic prompt if category file doesn't exist
+            system_prompt = "Extract all relevant information from this document and return as JSON with appropriate field names."
 
     payload = {
         "anthropic_version": "bedrock-2023-05-31",
@@ -71,7 +83,7 @@ def extract_fields(textract_log: str, category: Literal["licence", "receipt", "i
     
     return {}
 
-def run_bedrock_extraction(textract_log: str, category: str, region: str, profile: str, filename: str, timestamp: str, custom_prompt: str = None):
+def run_bedrock_extraction(textract_log: str, category: str, region: str, profile: str, filename: str, timestamp: str, custom_prompt: str = None, use_custom: bool = False):
     from .logger import log_print
     
     log_print("\n=== BEDROCK EXTRACTION ===")
@@ -79,7 +91,7 @@ def run_bedrock_extraction(textract_log: str, category: str, region: str, profil
         log_print(f"[INFO] Using custom prompt")
     else:
         log_print(f"[INFO] Using prompt: {Path(__file__).parent / 'prompts' / f'{category}.txt'}")
-    extracted = extract_fields(textract_log, category, region, profile, custom_prompt)
+    extracted = extract_fields(textract_log, category, region, profile, custom_prompt, use_custom)
     result_json = json.dumps(extracted, indent=2, ensure_ascii=False)
     log_print(result_json)
     
