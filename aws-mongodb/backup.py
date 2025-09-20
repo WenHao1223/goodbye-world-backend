@@ -118,7 +118,7 @@ tnb: {{
     "pembayaran": {{
         "jumlah": "number",
         "tarikh_bayar": "DD-MM-YYYY",
-        "cara": "string",
+        "kaedah": "string",
         "rujukan": "string"
     }}
 }}
@@ -423,7 +423,7 @@ Return:
                 "pembayaran": {
                     "jumlah": final_amount,
                     "tarikh_bayar": today,
-                    "cara": "Online Banking",
+                    "kaedah": "Online Banking",
                     "rujukan": reference_no
                 }
             }}

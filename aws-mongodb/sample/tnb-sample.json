@@ -67,7 +67,7 @@
   "pembayaran": {
     "jumlah": 311.90,
     "tarikh_bayar": "25-09-2025",
-    "cara": "TnG",
+    "kaedah": "TnG",
     "rujukan": "TNG20250925ABC123"
   }
 }
