@@ -18,8 +18,15 @@ class GovernmentServiceClient:
     
     def parse_instruction(self, instruction: str) -> dict:
         """Parse natural language instruction using AWS Bedrock"""
-        try:
-            prompt = f"""Parse Malaysian government database instruction. Return ONLY valid JSON.
+        import time
+        import random
+        
+        max_retries = 3
+        base_delay = 1
+        
+        for attempt in range(max_retries + 1):
+            try:
+                prompt = f"""Parse Malaysian government database instruction. Return ONLY valid JSON.
 
 Instruction: "{instruction}"
 
@@ -174,30 +181,38 @@ Return JSON format:
     "beneficiary_account": "string"
 }}"""
 
-            response = self.bedrock.invoke_model(
-                modelId=os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-sonnet-20240229-v1:0'),
-                body=json.dumps({
-                    "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 300,
-                    "messages": [{"role": "user", "content": prompt}]
-                })
-            )
+                response = self.bedrock.invoke_model(
+                    modelId=os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-sonnet-20240229-v1:0'),
+                    body=json.dumps({
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 300,
+                        "messages": [{"role": "user", "content": prompt}]
+                    })
+                )
+                
+                result = json.loads(response['body'].read())
+                content = result['content'][0]['text'].strip()
+                
+                # Extract JSON from response
+                json_start = content.find('{')
+                json_end = content.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    parsed = json.loads(content[json_start:json_end])
+                    return parsed
+                
+                return {"collection": "unknown", "operation": "unknown", "error": "Could not parse JSON from response"}
             
-            result = json.loads(response['body'].read())
-            content = result['content'][0]['text'].strip()
-            
-            # Extract JSON from response
-            json_start = content.find('{')
-            json_end = content.rfind('}') + 1
-            if json_start >= 0 and json_end > json_start:
-                parsed = json.loads(content[json_start:json_end])
-                return parsed
-            
-            return {"collection": "unknown", "operation": "unknown", "error": "Could not parse JSON from response"}
-            
-        except Exception as e:
-            print(f"Bedrock error: {e}")
-            return {"collection": "unknown", "operation": "unknown", "error": str(e)}
+            except Exception as e:
+                if "ThrottlingException" in str(e) and attempt < max_retries:
+                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                    print(f"Rate limited, retrying in {delay:.1f} seconds... (attempt {attempt + 1}/{max_retries + 1})")
+                    time.sleep(delay)
+                    continue
+                
+                print(f"Bedrock error: {e}")
+                return {"collection": "unknown", "operation": "unknown", "error": str(e)}
+        
+        return {"collection": "unknown", "operation": "unknown", "error": "Max retries exceeded"}
     
     def execute_operation(self, operation_data: dict) -> dict:
         """Execute MongoDB operation"""
@@ -401,26 +416,44 @@ Return JSON format:
         if not tnb_result.get("success"):
             return tnb_result
         
+        # Get TNB account details from accounts collection
+        tnb_account = self.db.accounts.find_one({"service": "TNB"})
+        
         # Then create transaction record
         reference_id = operation_data.get("reference_no", "MANUAL_PAYMENT")
         amount = operation_data.get("payment_amount", 0)
         account_no = operation_data.get("query", {}).get("account_no", "Unknown")
+        today = datetime.now().strftime("%Y-%m-%d")
         
-        transaction_data = {
+        transaction_doc = {
+            "transaction_id": f"TXN_{reference_id}",
             "reference_id": reference_id,
+            "transaction_date": today,
+            "transaction_type": "Payment",
             "amount": amount,
-            "beneficiary_name": "Tenaga Nasional Berhad",
-            "beneficiary_account": account_no,
-            "service_type": "TNB"
+            "currency": "MYR",
+            "fees": 0.0,
+            "status": "Successful",
+            "sender_bank": "Unknown",
+            "sender_account": "Unknown",
+            "sender_name": "Unknown",
+            "beneficiary_bank": tnb_account.get("beneficiary_bank", "Unknown") if tnb_account else "Unknown",
+            "beneficiary_account": tnb_account.get("beneficiary_account", account_no) if tnb_account else account_no,
+            "beneficiary_name": tnb_account.get("beneficiary_name", "Tenaga Nasional Berhad") if tnb_account else "Tenaga Nasional Berhad",
+            "service_type": "TNB",
+            "bill_reference": account_no,
+            "payment_details": f"TNB bill payment for account {account_no}",
+            "notes": "",
+            "created_at": today
         }
         
-        transaction_result = self._handle_create_transaction(transaction_data)
+        transaction_result = self.db.transactions.insert_one(transaction_doc)
         
         return {
             "success": True,
             "message": f"TNB payment updated and transaction {reference_id} created",
             "tnb_update": tnb_result,
-            "transaction_created": transaction_result
+            "transaction_id": str(transaction_result.inserted_id)
         }
     
 
