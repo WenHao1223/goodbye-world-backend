@@ -9,6 +9,5 @@ Extract the following information from this ID card text and return as JSON:
 
 Rules:
 - Use null for missing information
-- Format dates as YYYY-MM-DD
 - Extract exact text, don't interpret
 - Return only valid JSON
