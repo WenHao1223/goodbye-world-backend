@@ -2,6 +2,32 @@
 
 A serverless file upload service built with AWS Lambda, API Gateway, and S3. This service allows you to upload files to S3 and get presigned download URLs.
 
+## Quick Start
+
+**API Base URL:** `https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev`
+
+**Test the API immediately:**
+```python
+import requests
+import base64
+
+# Health Check
+response = requests.get("https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/health")
+print("Health:", response.json())
+
+# Upload a file (replace 'your-file.jpg' with actual file path)
+with open('your-file.jpg', 'rb') as f:
+    content = base64.b64encode(f.read()).decode('utf-8')
+
+upload_data = {
+    "filename": "your-file.jpg", 
+    "content": content,
+    "content_type": "image/jpeg"
+}
+response = requests.post("https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/upload", json=upload_data)
+print("Upload:", response.json())
+```
+
 ## Features
 
 - **File Upload**: Upload files via JSON API with base64 encoding
@@ -15,16 +41,41 @@ A serverless file upload service built with AWS Lambda, API Gateway, and S3. Thi
 
 ### Base URL
 ```
-https://{api-id}.execute-api.{region}.amazonaws.com/dev
+https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev
 ```
 
-### Endpoints
+### Available Endpoints
 
 #### 1. Health Check
 ```
 GET /health
 ```
 Returns service status and configuration.
+
+**Example Response:**
+```json
+{
+  "status": "healthy",
+  "service": "s3-upload-api",
+  "bucket": "great-ai-hackathon-uploads-dev",
+  "timestamp": "2025-09-20T17:33:22.165195",
+  "request_id": "7aface27-9927-42b7-ad9d-932c65f95928"
+}
+```
+
+**Python Example:**
+```python
+import requests
+
+def check_health():
+    url = "https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/health"
+    response = requests.get(url)
+    return response.json()
+
+# Usage
+health_status = check_health()
+print(f"Service status: {health_status['status']}")
+```
 
 #### 2. Upload File
 ```
@@ -35,44 +86,65 @@ Upload a file using JSON with base64 encoded content.
 **Request Body:**
 ```json
 {
-  "filename": "example.pdf",
+  "filename": "license.jpeg",
   "content": "base64_encoded_file_content",
-  "content_type": "application/pdf"
+  "content_type": "image/jpeg"
 }
 ```
 
-**Response:**
+**Example Response:**
 ```json
 {
   "message": "File uploaded successfully",
-  "filename": "example_20240921_143052_a1b2c3d4.pdf",
+  "filename": "license_20250920_173332_95234ada.jpeg",
   "bucket": "great-ai-hackathon-uploads-dev",
-  "size": 12345,
-  "content_type": "application/pdf",
-  "download_url": "https://s3.amazonaws.com/...",
+  "size": 85267,
+  "content_type": "image/jpeg",
+  "download_url": "https://great-ai-hackathon-uploads-dev.s3.amazonaws.com/license_20250920_173332_95234ada.jpeg?AWSAccessKeyId=...",
   "expiration_seconds": 3600,
-  "upload_timestamp": "2024-09-21T14:30:52.123456"
+  "upload_timestamp": "2025-09-20T17:33:32.258547"
 }
 ```
 
-#### 3. Get Download URL
-```
-GET /download/{file_key}
-```
-Generate a presigned download URL for a specific file.
+**Python Example:**
+```python
+import requests
+import base64
 
-**Response:**
-```json
-{
-  "download_url": "https://s3.amazonaws.com/...",
-  "file_key": "example_20240921_143052_a1b2c3d4.pdf",
-  "bucket": "great-ai-hackathon-uploads-dev",
-  "expiration_seconds": 3600,
-  "generated_at": "2024-09-21T14:35:12.123456"
-}
+def upload_file(file_path, content_type=None):
+    # Read and encode file
+    with open(file_path, 'rb') as file:
+        file_content = base64.b64encode(file.read()).decode('utf-8')
+    
+    # Determine content type if not provided
+    if not content_type:
+        if file_path.lower().endswith('.jpeg') or file_path.lower().endswith('.jpg'):
+            content_type = 'image/jpeg'
+        elif file_path.lower().endswith('.png'):
+            content_type = 'image/png'
+        elif file_path.lower().endswith('.pdf'):
+            content_type = 'application/pdf'
+        else:
+            content_type = 'application/octet-stream'
+    
+    # Prepare request
+    url = "https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/upload"
+    payload = {
+        "filename": file_path.split('/')[-1],  # Extract filename
+        "content": file_content,
+        "content_type": content_type
+    }
+    
+    response = requests.post(url, json=payload)
+    return response.json()
+
+# Usage
+result = upload_file("license.jpeg", "image/jpeg")
+print(f"Upload successful: {result['filename']}")
+print(f"Download URL: {result['download_url']}")
 ```
 
-#### 4. List Files
+#### 3. List Files
 ```
 GET /files?limit=100&prefix=
 ```
@@ -82,15 +154,15 @@ List files in the S3 bucket.
 - `limit` (optional): Maximum number of files to return (default: 100)
 - `prefix` (optional): Filter files by key prefix
 
-**Response:**
+**Example Response:**
 ```json
 {
   "files": [
     {
-      "key": "example_20240921_143052_a1b2c3d4.pdf",
-      "size": 12345,
-      "last_modified": "2024-09-21T14:30:52.123456",
-      "etag": "d41d8cd98f00b204e9800998ecf8427e"
+      "key": "license_20250920_173332_95234ada.jpeg",
+      "size": 85267,
+      "last_modified": "2025-09-20T17:33:33+00:00",
+      "etag": "7fb79a548919372f51c6cb42ff24c866"
     }
   ],
   "count": 1,
@@ -98,6 +170,141 @@ List files in the S3 bucket.
   "prefix": "",
   "is_truncated": false
 }
+```
+
+**Python Example:**
+```python
+import requests
+
+def list_files(limit=100, prefix=""):
+    url = "https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/files"
+    params = {}
+    if limit != 100:
+        params['limit'] = limit
+    if prefix:
+        params['prefix'] = prefix
+    
+    response = requests.get(url, params=params)
+    return response.json()
+
+# Usage
+files = list_files()
+print(f"Found {files['count']} files:")
+for file in files['files']:
+    print(f"- {file['key']} ({file['size']} bytes)")
+```
+
+#### 4. Generate Download URL
+```
+GET /download/{file_key}
+```
+Generate a presigned download URL for a specific file.
+
+**Example Response:**
+```json
+{
+  "download_url": "https://great-ai-hackathon-uploads-dev.s3.amazonaws.com/license_20250920_173332_95234ada.jpeg?AWSAccessKeyId=...",
+  "file_key": "license_20250920_173332_95234ada.jpeg",
+  "bucket": "great-ai-hackathon-uploads-dev",
+  "expiration_seconds": 3600,
+  "generated_at": "2025-09-20T17:33:39.805326"
+}
+```
+
+**Python Example:**
+```python
+import requests
+
+def generate_download_url(file_key):
+    url = f"https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/download/{file_key}"
+    response = requests.get(url)
+    return response.json()
+
+# Usage
+file_key = "license_20250920_173332_95234ada.jpeg"
+download_info = generate_download_url(file_key)
+print(f"Download URL: {download_info['download_url']}")
+print(f"Expires in: {download_info['expiration_seconds']} seconds")
+```
+
+### Complete Python Usage Example
+
+```python
+import requests
+import base64
+import time
+
+class S3UploadAPI:
+    def __init__(self):
+        self.base_url = "https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev"
+    
+    def health_check(self):
+        """Check API health status"""
+        response = requests.get(f"{self.base_url}/health")
+        return response.json()
+    
+    def upload_file(self, file_path, content_type=None):
+        """Upload a file to S3"""
+        with open(file_path, 'rb') as file:
+            file_content = base64.b64encode(file.read()).decode('utf-8')
+        
+        # Auto-detect content type
+        if not content_type:
+            if file_path.lower().endswith(('.jpeg', '.jpg')):
+                content_type = 'image/jpeg'
+            elif file_path.lower().endswith('.png'):
+                content_type = 'image/png'
+            elif file_path.lower().endswith('.pdf'):
+                content_type = 'application/pdf'
+            else:
+                content_type = 'application/octet-stream'
+        
+        payload = {
+            "filename": file_path.split('/')[-1],
+            "content": file_content,
+            "content_type": content_type
+        }
+        
+        response = requests.post(f"{self.base_url}/upload", json=payload)
+        return response.json()
+    
+    def list_files(self, limit=100, prefix=""):
+        """List files in the bucket"""
+        params = {}
+        if limit != 100:
+            params['limit'] = limit
+        if prefix:
+            params['prefix'] = prefix
+        
+        response = requests.get(f"{self.base_url}/files", params=params)
+        return response.json()
+    
+    def get_download_url(self, file_key):
+        """Generate download URL for a file"""
+        response = requests.get(f"{self.base_url}/download/{file_key}")
+        return response.json()
+
+# Example usage
+if __name__ == "__main__":
+    api = S3UploadAPI()
+    
+    # Check health
+    health = api.health_check()
+    print(f"API Status: {health['status']}")
+    
+    # Upload a file
+    upload_result = api.upload_file("example.jpg", "image/jpeg")
+    print(f"Uploaded: {upload_result['filename']}")
+    
+    # List files
+    files = api.list_files()
+    print(f"Total files: {files['count']}")
+    
+    # Get download URL
+    if files['files']:
+        file_key = files['files'][0]['key']
+        download_url = api.get_download_url(file_key)
+        print(f"Download URL: {download_url['download_url']}")
 ```
 
 ## Deployment
@@ -276,34 +483,37 @@ Open the existing `test_lambda.html` in your browser and enter your API URL manu
 
 ### Using curl
 
-**Upload a file:**
+**Health Check:**
 ```bash
-# Encode file to base64
-base64_content=$(base64 -i your-file.pdf)
-
-# Upload via API
-curl -X POST https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/upload \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"filename\": \"your-file.pdf\",
-    \"content\": \"$base64_content\",
-    \"content_type\": \"application/pdf\"
-  }"
+curl https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/health
 ```
 
-**Get download URL:**
+**Upload a file:**
 ```bash
-curl https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/download/your-file.pdf
+# Encode file to base64 (Linux/Mac)
+base64_content=$(base64 -i license.jpeg)
+
+# For Windows (PowerShell)
+# $base64_content = [Convert]::ToBase64String([IO.File]::ReadAllBytes("license.jpeg"))
+
+# Upload via API
+curl -X POST https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/upload \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"filename\": \"license.jpeg\",
+    \"content\": \"$base64_content\",
+    \"content_type\": \"image/jpeg\"
+  }"
 ```
 
 **List files:**
 ```bash
-curl https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/files
+curl https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/files
 ```
 
-**Health check:**
+**Get download URL:**
 ```bash
-curl https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/health
+curl https://5gkaebz86a.execute-api.us-east-1.amazonaws.com/dev/download/license_20250920_173332_95234ada.jpeg
 ```
 
 ## Testing Workflow
