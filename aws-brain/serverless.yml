@@ -14,6 +14,8 @@ provider:
     LAMBDA_RUNTIME: true
     PYTHONPATH: /var/task
     AWS_REGION1: ${self:provider.region}
+    ATLAS_URI: ${env:ATLAS_URI, 'mongodb+srv://username:password@cluster.mongodb.net/'}
+    ATLAS_DB_NAME: ${env:ATLAS_DB_NAME, 'greataihackathon'}
     BEDROCK_MODEL_ID: ${env:BEDROCK_MODEL_ID, 'anthropic.claude-3-sonnet-20240229-v1:0'}
   
   iam:

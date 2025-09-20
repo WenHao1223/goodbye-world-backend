@@ -1,5 +1,4 @@
 import json
-import requests
 from main import IntentClassifier
 
 def test_local():
@@ -8,21 +7,49 @@ def test_local():
     """
     classifier = IntentClassifier()
     
-    # Test cases
-    test_inputs = [
-        "I want to apply for a driving license",
-        "How do I renew my TNB account?",
-        "Check my bank account balance",
-        "What documents do I need for license application?"
+    # Test cases for different intents
+    test_requests = [
+        {
+            'user_id': 'test_user_123',
+            'session_id': '(new-session)',
+            'message': 'Hello, I need help',
+            'created_at': '2025-09-21T10:00:00Z',
+            'attachment_url': []
+        },
+        {
+            'user_id': 'test_user_123',
+            'session_id': 'session_123',
+            'message': 'I want to check my driving license status',
+            'created_at': '2025-09-21T10:01:00Z',
+            'attachment_url': []
+        },
+        {
+            'user_id': 'test_user_123',
+            'session_id': 'session_123',
+            'message': 'Thank you for your help, goodbye',
+            'created_at': '2025-09-21T10:02:00Z',
+            'attachment_url': []
+        },
+        {
+            'user_id': 'test_user_456',
+            'session_id': 'session_456',
+            'message': 'I have a document to upload',
+            'created_at': '2025-09-21T10:03:00Z',
+            'attachment_url': ['https://example.com/license.jpg']
+        }
     ]
     
     print("Testing Intent Classifier Locally")
     print("=" * 50)
     
-    for user_input in test_inputs:
-        print(f"\nInput: {user_input}")
-        result = classifier.classify_intent(user_input)
-        print(f"Result: {json.dumps(result, indent=2)}")
+    for i, request_data in enumerate(test_requests, 1):
+        print(f"\nTest Case {i}:")
+        print(f"Input: {json.dumps(request_data, indent=2)}")
+        try:
+            result = classifier.process_request(request_data)
+            print(f"Result: {json.dumps(result, indent=2)}")
+        except Exception as e:
+            print(f"Error: {str(e)}")
 
 def test_lambda_locally():
     """
@@ -32,14 +59,21 @@ def test_lambda_locally():
     
     test_event = {
         'body': json.dumps({
-            'user_input': 'I want to apply for a driving license'
+            'userId': 'test_user_123',
+            'sessionId': '(new-session)',
+            'message': 'I want to apply for a driving license',
+            'createdAt': '2025-09-21T10:00:00Z',
+            'attachmentUrl': []
         }),
         'httpMethod': 'POST'
     }
     
-    result = lambda_handler(test_event, None)
-    print("\nLambda Handler Test Result:")
-    print(json.dumps(result, indent=2))
+    try:
+        result = lambda_handler(test_event, None)
+        print("\nLambda Handler Test Result:")
+        print(json.dumps(result, indent=2))
+    except Exception as e:
+        print(f"Lambda Handler Error: {str(e)}")
 
 if __name__ == "__main__":
     test_local()

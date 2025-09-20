@@ -26,10 +26,14 @@ def lambda_handler(event, context):
         else:
             body = event
         
-        # Get the user input from the request
-        user_input = body.get('user_input', '')
+        # Get the required fields from the request
+        user_id = body.get('userId', '')
+        session_id = body.get('sessionId', '')
+        message = body.get('message', '')
+        created_at = body.get('createdAt', '')
+        attachment_url = body.get('attachmentUrl', [])
         
-        if not user_input:
+        if not user_id or not session_id or not message:
             return {
                 'statusCode': 400,
                 'headers': {
@@ -39,21 +43,29 @@ def lambda_handler(event, context):
                     'Access-Control-Allow-Methods': 'POST, OPTIONS'
                 },
                 'body': json.dumps({
-                    'error': 'Missing user_input parameter',
-                    'message': 'Please provide user_input in the request body'
+                    'error': 'Missing required parameters',
+                    'message': 'Please provide userId, sessionId, and message in the request body'
                 })
             }
         
         # Initialize the intent classifier
         classifier = IntentClassifier()
         
-        # Classify the intent
-        result = classifier.classify_intent(user_input)
+        # Process the request
+        result = classifier.process_request({
+            'user_id': user_id,
+            'session_id': session_id,
+            'message': message,
+            'created_at': created_at,
+            'attachment_url': attachment_url
+        })
         
-        # Prepare the response
+        # Prepare the response in the expected format
         response_data = {
-            'user_input': user_input,
-            'classification_result': result,
+            'id': result.get('id', ''),
+            'reply': result.get('reply', ''),
+            'sessionId': result.get('sessionId', session_id),
+            'attachments': result.get('attachments', []),
             'status': 'success'
         }
         
@@ -74,7 +86,9 @@ def lambda_handler(event, context):
             'error': str(e),
             'traceback': traceback.format_exc(),
             'status': 'failed',
-            'user_input': body.get('user_input', '') if 'body' in locals() else ''
+            'user_id': body.get('userId', '') if 'body' in locals() else '',
+            'session_id': body.get('sessionId', '') if 'body' in locals() else '',
+            'message': body.get('message', '') if 'body' in locals() else ''
         }
         
         return {
