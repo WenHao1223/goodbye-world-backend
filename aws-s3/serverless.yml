@@ -1,0 +1,156 @@
+service: s3-upload-api
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: python3.10
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  timeout: 29  # Match API Gateway timeout limit
+  memorySize: 1024
+  
+  environment:
+    LAMBDA_RUNTIME: true
+    PYTHONPATH: /var/task
+    AWS_REGION1: ${self:provider.region}
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME, 'great-ai-hackathon-uploads-${self:provider.stage}'}
+    PRESIGNED_URL_EXPIRATION: ${env:PRESIGNED_URL_EXPIRATION, '3600'}  # 1 hour default
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:PutObjectAcl
+            - s3:GetObject
+            - s3:DeleteObject
+            - s3:ListBucket
+          Resource: 
+            - "arn:aws:s3:::great-ai-hackathon-uploads-${self:provider.stage}"
+            - "arn:aws:s3:::great-ai-hackathon-uploads-${self:provider.stage}/*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "arn:aws:logs:*:*:*"
+
+functions:
+  upload:
+    handler: lambda_handler.upload_handler
+    events:
+      - http:
+          path: upload
+          method: post
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
+  
+  get-download-url:
+    handler: lambda_handler.get_download_url_handler
+    events:
+      - http:
+          path: download/{file_key+}
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+            allowCredentials: false
+  
+  list-files:
+    handler: lambda_handler.list_files_handler
+    events:
+      - http:
+          path: files
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+            allowCredentials: false
+  
+  health:
+    handler: lambda_handler.health_handler
+    events:
+      - http:
+          path: health
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+            allowCredentials: false
+
+resources:
+  Resources:
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: great-ai-hackathon-uploads-${self:provider.stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              AllowedOrigins:
+                - "*"
+              MaxAge: 3000
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+
+package:
+  patterns:
+    - '!.git/**'
+    - '!.venv/**'
+    - '!__pycache__/**'
+    - '!*.pyc'
+    - '!.pytest_cache/**'
+    - '!tests/**'
+    - '!media/**'
+    - '!log/**'
+    - '!output/**'
+    - '!test_*.py'
+    - '!local_test.py'
+    - '!deploy_lambda.py'
+    - '!README*.md'
+    - '!uv.lock'
+    - 'lambda_handler.py'
+    - 'requirements.txt'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: false
+    zip: false
+    slim: false
+    strip: false
+    noDeps: false
+    usePoetry: false
+    useStaticCache: false
+    invalidateCaches: true
+    usePipenv: false
+    pythonBin: python
+    pipCmdExtraArgs:
+      - --no-cache-dir
+      - --upgrade
+      - --force-reinstall

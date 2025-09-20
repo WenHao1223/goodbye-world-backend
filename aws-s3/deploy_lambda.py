@@ -1,0 +1,326 @@
+#!/usr/bin/env python3
+"""
+Deployment script for S3 Upload Lambda function
+"""
+
+import boto3
+import zipfile
+import os
+import json
+from pathlib import Path
+import tempfile
+import shutil
+
+
+def create_lambda_package():
+    """Create a deployment package for Lambda"""
+    
+    # Create temporary directory for package
+    with tempfile.TemporaryDirectory() as temp_dir:
+        package_dir = Path(temp_dir) / "package"
+        package_dir.mkdir()
+        
+        print("Creating Lambda deployment package...")
+        
+        # Copy source code
+        src_files = [
+            "lambda_handler.py"
+        ]
+        
+        for item in src_files:
+            src_path = Path(item)
+            if src_path.is_file():
+                shutil.copy2(src_path, package_dir / src_path.name)
+                print(f"  Added: {src_path.name}")
+        
+        # Create zip file
+        zip_path = Path("lambda_deployment.zip")
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(package_dir):
+                for file in files:
+                    file_path = Path(root) / file
+                    arcname = file_path.relative_to(package_dir)
+                    zipf.write(file_path, arcname)
+        
+        print(f"Package created: {zip_path}")
+        return zip_path
+
+
+def deploy_lambda_function(function_name="s3-upload-api", region="us-east-1", bucket_name=None):
+    """Deploy the Lambda function"""
+    
+    # Create package
+    zip_path = create_lambda_package()
+    
+    # Initialize clients
+    lambda_client = boto3.client('lambda', region_name=region)
+    s3_client = boto3.client('s3', region_name=region)
+    
+    try:
+        # Create S3 bucket if it doesn't exist
+        if bucket_name:
+            try:
+                s3_client.head_bucket(Bucket=bucket_name)
+                print(f"Using existing bucket: {bucket_name}")
+            except:
+                print(f"Creating bucket: {bucket_name}")
+                if region == 'us-east-1':
+                    s3_client.create_bucket(Bucket=bucket_name)
+                else:
+                    s3_client.create_bucket(
+                        Bucket=bucket_name,
+                        CreateBucketConfiguration={'LocationConstraint': region}
+                    )
+                
+                # Set CORS configuration
+                cors_config = {
+                    'CORSRules': [
+                        {
+                            'AllowedHeaders': ['*'],
+                            'AllowedMethods': ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+                            'AllowedOrigins': ['*'],
+                            'MaxAgeSeconds': 3000
+                        }
+                    ]
+                }
+                s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+        
+        # Read zip file
+        with open(zip_path, 'rb') as f:
+            zip_content = f.read()
+        
+        # Check if function exists
+        function_exists = False
+        try:
+            lambda_client.get_function(FunctionName=function_name)
+            function_exists = True
+        except lambda_client.exceptions.ResourceNotFoundException:
+            pass
+        
+        # Environment variables
+        env_vars = {
+            'LAMBDA_RUNTIME': 'true',
+            'PYTHONPATH': '/var/task'
+        }
+        if bucket_name:
+            env_vars['S3_BUCKET_NAME'] = bucket_name
+        
+        if function_exists:
+            # Update existing function
+            print(f"Updating existing function: {function_name}")
+            response = lambda_client.update_function_code(
+                FunctionName=function_name,
+                ZipFile=zip_content
+            )
+            
+            # Update environment variables
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Environment={'Variables': env_vars}
+            )
+        else:
+            # Create new function
+            print(f"Creating new function: {function_name}")
+            
+            # Get account ID for role ARN
+            sts = boto3.client('sts')
+            account_id = sts.get_caller_identity()['Account']
+            role_arn = f"arn:aws:iam::{account_id}:role/lambda-s3-execution-role"
+            
+            response = lambda_client.create_function(
+                FunctionName=function_name,
+                Runtime='python3.10',
+                Role=role_arn,
+                Handler='lambda_handler.lambda_handler',
+                Code={'ZipFile': zip_content},
+                Description='S3 File Upload API Lambda Function',
+                Timeout=300,  # 5 minutes
+                MemorySize=1024,
+                Environment={
+                    'Variables': env_vars
+                }
+            )
+        
+        print(f"Function ARN: {response['FunctionArn']}")
+        
+        # Create API Gateway integration
+        create_api_gateway(function_name, region)
+        
+    finally:
+        # Clean up
+        if zip_path.exists():
+            zip_path.unlink()
+
+
+def create_api_gateway(function_name, region):
+    """Create API Gateway for the Lambda function"""
+    
+    apigateway = boto3.client('apigateway', region_name=region)
+    lambda_client = boto3.client('lambda', region_name=region)
+    
+    try:
+        # Create REST API
+        api = apigateway.create_rest_api(
+            name=f'{function_name}-api',
+            description='S3 Upload API Gateway',
+            binaryMediaTypes=['*/*']  # Support binary uploads
+        )
+        api_id = api['id']
+        
+        # Get root resource
+        resources = apigateway.get_resources(restApiId=api_id)
+        root_id = resources['items'][0]['id']
+        
+        # Get account ID
+        sts = boto3.client('sts')
+        account_id = sts.get_caller_identity()['Account']
+        lambda_arn = f"arn:aws:lambda:{region}:{account_id}:function:{function_name}"
+        
+        # Create upload resource
+        upload_resource = apigateway.create_resource(
+            restApiId=api_id,
+            parentId=root_id,
+            pathPart='upload'
+        )
+        
+        # Create upload method
+        apigateway.put_method(
+            restApiId=api_id,
+            resourceId=upload_resource['id'],
+            httpMethod='POST',
+            authorizationType='NONE'
+        )
+        
+        apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=upload_resource['id'],
+            httpMethod='POST',
+            type='AWS_PROXY',
+            integrationHttpMethod='POST',
+            uri=f"arn:aws:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations"
+        )
+        
+        # Create download resource with proxy
+        download_resource = apigateway.create_resource(
+            restApiId=api_id,
+            parentId=root_id,
+            pathPart='download'
+        )
+        
+        proxy_resource = apigateway.create_resource(
+            restApiId=api_id,
+            parentId=download_resource['id'],
+            pathPart='{file_key+}'
+        )
+        
+        # Create download method
+        apigateway.put_method(
+            restApiId=api_id,
+            resourceId=proxy_resource['id'],
+            httpMethod='GET',
+            authorizationType='NONE',
+            requestParameters={
+                'method.request.path.file_key': True
+            }
+        )
+        
+        apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=proxy_resource['id'],
+            httpMethod='GET',
+            type='AWS_PROXY',
+            integrationHttpMethod='POST',
+            uri=f"arn:aws:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations"
+        )
+        
+        # Create files list resource
+        files_resource = apigateway.create_resource(
+            restApiId=api_id,
+            parentId=root_id,
+            pathPart='files'
+        )
+        
+        apigateway.put_method(
+            restApiId=api_id,
+            resourceId=files_resource['id'],
+            httpMethod='GET',
+            authorizationType='NONE'
+        )
+        
+        apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=files_resource['id'],
+            httpMethod='GET',
+            type='AWS_PROXY',
+            integrationHttpMethod='POST',
+            uri=f"arn:aws:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations"
+        )
+        
+        # Create health resource
+        health_resource = apigateway.create_resource(
+            restApiId=api_id,
+            parentId=root_id,
+            pathPart='health'
+        )
+        
+        apigateway.put_method(
+            restApiId=api_id,
+            resourceId=health_resource['id'],
+            httpMethod='GET',
+            authorizationType='NONE'
+        )
+        
+        apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=health_resource['id'],
+            httpMethod='GET',
+            type='AWS_PROXY',
+            integrationHttpMethod='POST',
+            uri=f"arn:aws:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations"
+        )
+        
+        # Deploy API
+        deployment = apigateway.create_deployment(
+            restApiId=api_id,
+            stageName='dev'
+        )
+        
+        api_url = f"https://{api_id}.execute-api.{region}.amazonaws.com/dev"
+        print(f"API Base URL: {api_url}")
+        print(f"Upload endpoint: {api_url}/upload")
+        print(f"Files list endpoint: {api_url}/files")
+        print(f"Health endpoint: {api_url}/health")
+        print(f"Download endpoint: {api_url}/download/{{file_key}}")
+        
+        # Add Lambda permissions for API Gateway
+        statement_ids = ['api-gateway-upload', 'api-gateway-download', 'api-gateway-files', 'api-gateway-health']
+        
+        for statement_id in statement_ids:
+            try:
+                lambda_client.add_permission(
+                    FunctionName=function_name,
+                    StatementId=statement_id,
+                    Action='lambda:InvokeFunction',
+                    Principal='apigateway.amazonaws.com',
+                    SourceArn=f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*"
+                )
+            except lambda_client.exceptions.ResourceConflictException:
+                pass  # Permission already exists
+        
+    except Exception as e:
+        print(f"Error creating API Gateway: {e}")
+
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Deploy S3 Upload Lambda Function")
+    parser.add_argument("--function-name", default="s3-upload-api", help="Lambda function name")
+    parser.add_argument("--region", default="us-east-1", help="AWS region")
+    parser.add_argument("--bucket-name", help="S3 bucket name (will be created if doesn't exist)")
+    
+    args = parser.parse_args()
+    
+    bucket_name = args.bucket_name or f"great-ai-hackathon-uploads-{args.function_name}"
+    
+    deploy_lambda_function(args.function_name, args.region, bucket_name)

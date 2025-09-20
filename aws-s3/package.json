@@ -1,0 +1,16 @@
+{
+  "name": "s3-upload-api",
+  "version": "1.0.0",
+  "description": "S3 File Upload API Lambda Function",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f upload"
+  },
+  "devDependencies": {
+    "serverless-python-requirements": "^6.1.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
