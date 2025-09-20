@@ -13,6 +13,7 @@ provider:
   environment:
     LAMBDA_RUNTIME: true
     PYTHONPATH: /var/task
+    AWS_REGION1: ${self:provider.region}
     ATLAS_URI: ${env:ATLAS_URI, 'mongodb+srv://username:password@cluster.mongodb.net/'}
     ATLAS_DB_NAME: ${env:ATLAS_DB_NAME, 'greataihackathon'}
     BEDROCK_MODEL_ID: ${env:BEDROCK_MODEL_ID, 'anthropic.claude-3-sonnet-20240229-v1:0'}
@@ -79,6 +80,7 @@ package:
     - '!uv.lock'
     - 'lambda_handler.py'
     - 'main.py'
+    - 'requirements.txt'
 
 plugins:
   - serverless-python-requirements
@@ -86,9 +88,16 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
-    zip: true
-    slim: true
+    zip: false
+    slim: false
     strip: false
     noDeps: false
+    usePoetry: false
+    useStaticCache: false
+    invalidateCaches: true
+    usePipenv: false
+    pythonBin: python
     pipCmdExtraArgs:
       - --no-cache-dir
+      - --upgrade
+      - --force-reinstall

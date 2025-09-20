@@ -4,11 +4,16 @@ import sys
 import re
 from datetime import datetime, timedelta
 from pymongo import MongoClient
-from dotenv import load_dotenv
 import os
 import boto3
 
-load_dotenv()
+# Load environment variables only if not in Lambda
+if not os.getenv('LAMBDA_RUNTIME'):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
 
 class GovernmentServiceClient:
     def __init__(self):

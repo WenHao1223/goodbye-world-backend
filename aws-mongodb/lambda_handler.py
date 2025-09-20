@@ -6,13 +6,17 @@ from typing import Dict, Any
 # Add the current directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from main import GovernmentServiceClient, execute_instruction
+from main import GovernmentServiceClient
 
 def lambda_handler(event, context):
     """
     AWS Lambda handler for MongoDB MCP operations
     """
     try:
+        # Handle OPTIONS requests for CORS
+        if event.get('httpMethod') == 'OPTIONS':
+            return handle_options()
+        
         # Parse the request
         if 'body' in event:
             if isinstance(event['body'], str):
@@ -69,8 +73,10 @@ def lambda_handler(event, context):
         }
         
     except Exception as e:
+        import traceback
         error_response = {
             'error': str(e),
+            'traceback': traceback.format_exc(),
             'status': 'failed',
             'instruction': body.get('instruction', '') if 'body' in locals() else ''
         }
@@ -85,6 +91,22 @@ def lambda_handler(event, context):
             },
             'body': json.dumps(error_response, indent=2, default=str)
         }
+
+def health_handler(event, context):
+    """
+    Health check endpoint
+    """
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        },
+        'body': json.dumps({
+            'status': 'healthy',
+            'timestamp': context.aws_request_id if context else 'local'
+        })
+    }
 
 # For OPTIONS requests (CORS preflight)
 def handle_options():
