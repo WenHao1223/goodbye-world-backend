@@ -1,0 +1,16 @@
+{
+  "name": "aws-brain-api",
+  "version": "1.0.0",
+  "description": "AWS Brain Intent Classification API Lambda Function",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f classify"
+  },
+  "devDependencies": {
+    "serverless-python-requirements": "^6.1.0"
+  },
+  "author": "",
+  "license": "ISC"
+}

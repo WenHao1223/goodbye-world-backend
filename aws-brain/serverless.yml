@@ -1,0 +1,101 @@
+service: aws-brain-api
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: python3.10
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  timeout: 29  # Match API Gateway timeout limit
+  memorySize: 1024
+  
+  environment:
+    LAMBDA_RUNTIME: true
+    PYTHONPATH: /var/task
+    AWS_REGION1: ${self:provider.region}
+    BEDROCK_MODEL_ID: ${env:BEDROCK_MODEL_ID, 'anthropic.claude-3-sonnet-20240229-v1:0'}
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - bedrock:InvokeModel
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "arn:aws:logs:*:*:*"
+
+functions:
+  classify:
+    handler: lambda_handler.lambda_handler
+    events:
+      - http:
+          path: brain/classify
+          method: post
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
+  
+  health:
+    handler: lambda_handler.health_handler
+    events:
+      - http:
+          path: health
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+            allowCredentials: false
+
+package:
+  patterns:
+    - '!.git/**'
+    - '!.venv/**'
+    - '!__pycache__/**'
+    - '!*.pyc'
+    - '!.pytest_cache/**'
+    - '!tests/**'
+    - '!media/**'
+    - '!log/**'
+    - '!output/**'
+    - '!test_*.py'
+    - '!local_test.py'
+    - '!deploy_lambda.py'
+    - '!README*.md'
+    - '!uv.lock'
+    - 'lambda_handler.py'
+    - 'main.py'
+    - 'requirements.txt'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: false
+    zip: false
+    slim: false
+    strip: false
+    noDeps: false
+    usePoetry: false
+    useStaticCache: false
+    invalidateCaches: true
+    usePipenv: false
+    pythonBin: python
+    pipCmdExtraArgs:
+      - --no-cache-dir
+      - --upgrade
+      - --force-reinstall
