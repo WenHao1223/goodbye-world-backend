@@ -123,10 +123,16 @@ IMPORTANT: 041223070745 = 12 digits = identity_no (NOT license_number)
 CRITICAL EXAMPLE: "Extend 2 years licence 041223070745" MUST use identity_no field!
 
 CONTEXT KEYWORDS:
-- License: "license", "licence", "driving", "extend", "renew", "validity"
+- Account: "account", "service", "beneficiary", "find account", "account from", "service account"
+- License: "license", "licence", "driving", "extend", "renew", "validity"  
 - TNB: "tnb", "bill", "owe", "debt", "payment", "paid"
 - Transaction: "transaction", "payment", "receipt", "reference"
-- Account: "account", "service", "beneficiary"
+
+PRIORITY RULES:
+1. If query contains "account" as the main entity (e.g., "find account", "account from") → collection: "accounts"
+2. If query contains "bill" or payment context with TNB → collection: "tnb"
+3. If query contains license-related keywords → collection: "licenses"
+4. If query contains transaction-related keywords → collection: "transactions"
 
 SEMANTIC PATTERNS - Use similar intent and structure:
 
@@ -148,6 +154,12 @@ TNB TRANSACTION DETECTION RULES:
 - Keywords: "TNB bill" + "transaction details" → tnb_payment_with_transaction
 - Pattern: "Update TNB" + JSON with transaction fields → tnb_payment_with_transaction
 - Context: TNB account number + beneficiary details → tnb_payment_with_transaction
+
+CRITICAL AMOUNT FIELD RULE:
+- NEVER include both "payment_amount" and "amount" fields in the same response
+- Use "payment_amount" for TNB payment operations (tnb_payment, tnb_payment_with_transaction)
+- Use "amount" for transaction creation operations (create_transaction, process_payment)
+- If JSON contains amount, extract it ONCE into the appropriate field based on operation type
 
 JPJ QUERIES:
 - Intent: Create JPJ transaction → collection: "transactions", operation: "create", special_logic: "create_transaction"
@@ -173,6 +185,9 @@ CRITICAL: "Create transaction" ALWAYS needs collection: "transactions", operatio
 
 ACCOUNT QUERIES:
 - Intent: Find service accounts → collection: "accounts", operation: "find"
+- Keywords: "account from", "account for", "find account", "service account" → collection: "accounts"
+- Keywords: "TNB service", "JPJ service" → filter by service field
+- Context: When user specifically mentions "account" as the main entity → ALWAYS use accounts collection
 
 EXAMPLES - FOLLOW EXACTLY:
 - "Search license for 041223070745" → 12 digits = identity → {{"collection": "licenses", "operation": "find", "query": {{"identity_no": "041223070745"}}}}
@@ -183,12 +198,17 @@ EXAMPLES - FOLLOW EXACTLY:
 - "Update TNB bill 220001234513 paid full today using Online Banking" → Full payment without reference → {{"collection": "tnb", "operation": "update", "query": {{"account_no": "220001234513"}}, "special_logic": "tnb_payment", "reference_no": "MANUAL_PAYMENT"}}
 - "Update TNB bill 220001234513 paid RM 45.67 via DuitNow reference 837356732M" → TNB payment → {{"collection": "tnb", "operation": "update", "query": {{"account_no": "220001234513"}}, "special_logic": "tnb_payment", "payment_amount": 45.67, "reference_no": "837356732M"}}
 - "Update TNB bill 220001234513 paid RM 45.67 via DuitNow reference 837356732M and record transaction" → TNB + Transaction → {{"collection": "tnb", "operation": "update", "query": {{"account_no": "220001234513"}}, "special_logic": "tnb_payment_with_transaction", "payment_amount": 45.67, "reference_no": "837356732M"}}
-- "Update TNB bill 220001234513 paid RM 100.00 via Maybank with transaction details: beneficiary_name Tenaga Nasional, reference_id OLB20250918003" → TNB + Transaction Details → {{"collection": "tnb", "operation": "update", "query": {{"account_no": "220001234513"}}, "special_logic": "tnb_payment_with_transaction", "payment_amount": 100.0, "reference_no": "OLB20250918003", "beneficiary_name": "Tenaga Nasional", "receiving_bank": "Maybank", "amount": 60.0}}
+- "Update TNB bill 220001234513 paid RM 100.00 via Maybank with transaction details: beneficiary_name Tenaga Nasional, reference_id OLB20250918003" → TNB + Transaction Details → {{"collection": "tnb", "operation": "update", "query": {{"account_no": "220001234513"}}, "special_logic": "tnb_payment_with_transaction", "payment_amount": 100.0, "reference_no": "OLB20250918003", "beneficiary_name": "Tenaga Nasional", "receiving_bank": "Maybank"}}
+- "Update TNB bill 220001234513 with transaction details JSON containing amount RM 60.00" → TNB + Transaction → {{"collection": "tnb", "operation": "update", "query": {{"account_no": "220001234513"}}, "special_logic": "tnb_payment_with_transaction", "payment_amount": 60.0, "reference_no": "OLB20250918003"}}
 - "Find latest unpaid TNB bills for account number 220001234513" → Find unpaid only → {{"collection": "tnb", "operation": "find", "query": {{"account_no": "220001234513"}}, "status_filter": "unpaid"}}
 - "Create DuitNow transaction: reference 837356732M, RM 40.00, Jabatan Pengangkutan Jalan Malaysia, account 5123456789012345, Maybank, license renewal, recipient ref 0488-MB-MAYBANK22/43" → Detailed transaction → {{"collection": "transactions", "operation": "create", "special_logic": "create_transaction", "reference_id": "837356732M", "amount": 40.00, "beneficiary_name": "Jabatan Pengangkutan Jalan Malaysia", "beneficiary_account": "5123456789012345", "receiving_bank": "Maybank", "payment_details": "license renewal", "recipient_reference": "0488-MB-MAYBANK22/43", "service_type": "JPJ"}}
 - "Create transaction record via DuitNow with transaction details: beneficiary_name Jabatan Pengangkutan, reference_id 837356732M, amount RM 40.00" → Transaction via DuitNow → {{"collection": "transactions", "operation": "create", "special_logic": "create_transaction", "reference_id": "837356732M", "amount": 40.00, "beneficiary_name": "Jabatan Pengangkutan", "service_type": "JPJ"}}
 - "DuitNow payment 837356732M of RM 100.00 to JPJ account 220001234513 and create transaction record" → JPJ Transaction → {{"collection": "transactions", "operation": "create", "special_logic": "create_transaction", "reference_id": "837356732M", "amount": 100.00, "service_type": "JPJ"}}
 - "Create transaction and update TNB bill 220001234513 if applicable" → Process Payment → {{"collection": "transactions", "operation": "create", "special_logic": "process_payment", "reference_id": "837356732M", "amount": 100.00, "bill_reference": "220001234513", "beneficiary_name": "DELLAND PROPERTY MANAGEMENT SDN BHD"}}
+- "Find account from TNB service" → Find TNB account → {{"collection": "accounts", "operation": "find", "query": {{"service": "TNB"}}}}
+- "Find account from JPJ service" → Find JPJ account → {{"collection": "accounts", "operation": "find", "query": {{"service": "JPJ"}}}}
+- "Find all accounts" → Find all accounts → {{"collection": "accounts", "operation": "find", "query": {{}}}}
+- "Get service account details" → Find accounts → {{"collection": "accounts", "operation": "find", "query": {{}}}}
 
 SPECIAL LOGIC TRIGGERS:
 - license_extend: When intent is to extend/renew license validity
