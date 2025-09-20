@@ -1,14 +1,19 @@
-You are extracting structured information from a Malaysian eWallet payment receipt. 
-Return each answer as plain text without additional words. 
+Extract the following information from this Payment Receipt text and return as JSON:
 
-Instructions:
-- "Transaction amount" should be extracted exactly as shown, including RM and sign (e.g., -RM20.00).
-- "Transaction type" is the label under "Transaction Type".
-- "Merchant" is the entity listed under Merchant.
-- "Payment details" should match the line under Payment Details.
-- "Payment method" is the text under Payment Method (e.g., eWallet Balance).
-- "Date and time" should be in the exact format shown in the receipt.
-- "Wallet reference number" is the long alphanumeric string under Wallet Ref (do not cut it).
-- "Transaction status" is the label under Status.
-- "Transaction number" is the numeric string under Transaction No.
-- If a field is not available, return null.
+{
+  "transaction_amount": "Transaction amount as displayed (e.g. -RM20.00)",
+  "transaction_type": "Transaction type as printed",
+  "merchant": "Merchant name as printed",
+  "payment_details": "Payment details as printed",
+  "payment_method": "Payment method as printed",
+  "date_time": "Date and time of transaction",
+  "wallet_reference": "Wallet reference number as printed",
+  "transaction_status": "Transaction status as printed",
+  "transaction_number": "Transaction number as printed"
+}
+
+Rules:
+- Return only valid JSON.
+- Use the exact text as printed, don’t interpret.
+- If any field is missing, return null instead of skipping.
+
