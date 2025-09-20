@@ -4,7 +4,6 @@ Extract the following information from this Payment Receipt text and return as J
   "transaction_amount": "Transaction amount as displayed (e.g. -RM20.00)",
   "transaction_type": "Transaction type as printed",
   "merchant": "Merchant name as printed",
-  "payment_details": "Payment details as printed",
   "payment_method": "Payment method as printed",
   "date_time": "Date and time of transaction",
   "wallet_reference": "Wallet reference number as printed",
