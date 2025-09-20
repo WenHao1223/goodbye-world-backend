@@ -479,6 +479,253 @@ Example response:
 - Large JSON responses are automatically formatted for readability
 - All database operations include proper error handling and validation
 
+## Python API Integration
+
+### Using requests library
+
+```python
+import requests
+import json
+
+def call_mongodb_mcp_api(api_url, instruction):
+    """
+    Call the MongoDB MCP Lambda API from Python
+    
+    Args:
+        api_url (str): The API Gateway URL
+        instruction (str): Natural language instruction
+    
+    Returns:
+        dict: API response
+    """
+    # Create request payload
+    payload = {
+        "instruction": instruction
+    }
+    
+    # Make request
+    response = requests.post(
+        api_url,
+        json=payload,
+        headers={'Content-Type': 'application/json'},
+        timeout=30  # 30 second timeout
+    )
+    
+    # Check for successful response
+    response.raise_for_status()
+    
+    return response.json()
+
+# Example usage
+if __name__ == "__main__":
+    API_URL = "https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/mongodb-mcp"
+    
+    # Test different instructions
+    instructions = [
+        "Find licence with identity number of 041223070745",
+        "Find latest unpaid TNB bills for account number 220001234513",
+        "Find account with service from JPJ",
+        "Extend 2 years licence 041223070745"
+    ]
+    
+    for instruction in instructions:
+        print(f"\n📝 Instruction: {instruction}")
+        try:
+            result = call_mongodb_mcp_api(API_URL, instruction)
+            print(f"✅ Success: {result.get('result', {}).get('count', 0)} records found")
+            print(json.dumps(result, indent=2))
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error: {e}")
+```
+
+### Using urllib (built-in library)
+
+```python
+import urllib.request
+import urllib.parse
+import json
+
+def call_mongodb_mcp_api_urllib(api_url, instruction):
+    """
+    Call the MongoDB MCP Lambda API using urllib (no external dependencies)
+    
+    Args:
+        api_url (str): The API Gateway URL
+        instruction (str): Natural language instruction
+    
+    Returns:
+        dict: API response
+    """
+    # Create request payload
+    payload = {
+        "instruction": instruction
+    }
+    
+    # Convert to JSON bytes
+    data = json.dumps(payload).encode('utf-8')
+    
+    # Create request
+    req = urllib.request.Request(
+        api_url,
+        data=data,
+        headers={
+            'Content-Type': 'application/json',
+            'User-Agent': 'Python-urllib/3.0'
+        },
+        method='POST'
+    )
+    
+    # Make request
+    with urllib.request.urlopen(req, timeout=30) as response:
+        response_data = response.read().decode('utf-8')
+        return json.loads(response_data)
+
+# Example usage
+API_URL = "https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/mongodb-mcp"
+instruction = "Find licence with identity number of 041223070745"
+
+try:
+    result = call_mongodb_mcp_api_urllib(API_URL, instruction)
+    print("Success!")
+    print(json.dumps(result, indent=2))
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+### Async Python with aiohttp
+
+```python
+import aiohttp
+import asyncio
+import json
+
+async def call_mongodb_mcp_api_async(session, api_url, instruction):
+    """
+    Async call to MongoDB MCP Lambda API
+    
+    Args:
+        session: aiohttp ClientSession
+        api_url (str): The API Gateway URL
+        instruction (str): Natural language instruction
+    
+    Returns:
+        dict: API response
+    """
+    payload = {"instruction": instruction}
+    
+    async with session.post(
+        api_url,
+        json=payload,
+        headers={'Content-Type': 'application/json'},
+        timeout=aiohttp.ClientTimeout(total=30)
+    ) as response:
+        response.raise_for_status()
+        return await response.json()
+
+async def batch_process_instructions():
+    """Process multiple instructions concurrently"""
+    API_URL = "https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/mongodb-mcp"
+    
+    instructions = [
+        "Find licence with identity number of 041223070745",
+        "Find latest unpaid TNB bills for account number 220001234513",
+        "Find account with service from TNB"
+    ]
+    
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            call_mongodb_mcp_api_async(session, API_URL, instruction)
+            for instruction in instructions
+        ]
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for i, result in enumerate(results):
+            print(f"\n📝 Instruction {i+1}: {instructions[i]}")
+            if isinstance(result, Exception):
+                print(f"❌ Error: {result}")
+            else:
+                print(f"✅ Success: {result.get('result', {}).get('count', 0)} records")
+
+# Run async example
+# asyncio.run(batch_process_instructions())
+```
+
+### Error Handling Best Practices
+
+```python
+import requests
+import time
+from typing import Optional, Dict, Any
+
+class MongoDBMCPClient:
+    def __init__(self, api_url: str, timeout: int = 30, max_retries: int = 3):
+        self.api_url = api_url
+        self.timeout = timeout
+        self.max_retries = max_retries
+    
+    def call_api(self, instruction: str) -> Optional[Dict[Any, Any]]:
+        """
+        Call API with retry logic and proper error handling
+        """
+        for attempt in range(self.max_retries):
+            try:
+                response = requests.post(
+                    self.api_url,
+                    json={"instruction": instruction},
+                    headers={'Content-Type': 'application/json'},
+                    timeout=self.timeout
+                )
+                
+                # Handle different status codes
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get('status') == 'success':
+                        return result
+                    else:
+                        print(f"API returned error: {result.get('error', 'Unknown error')}")
+                        return None
+                        
+                elif response.status_code == 502:
+                    print(f"Bad Gateway (502) - Attempt {attempt + 1}/{self.max_retries}")
+                    if attempt < self.max_retries - 1:
+                        time.sleep(2 ** attempt)  # Exponential backoff
+                        continue
+                        
+                elif response.status_code == 429:
+                    print(f"Rate limited (429) - Attempt {attempt + 1}/{self.max_retries}")
+                    if attempt < self.max_retries - 1:
+                        time.sleep(5)  # Wait longer for rate limits
+                        continue
+                        
+                else:
+                    print(f"HTTP {response.status_code}: {response.text}")
+                    return None
+                    
+            except requests.exceptions.Timeout:
+                print(f"Timeout - Attempt {attempt + 1}/{self.max_retries}")
+                if attempt < self.max_retries - 1:
+                    time.sleep(1)
+                    continue
+                    
+            except requests.exceptions.RequestException as e:
+                print(f"Request error: {e}")
+                return None
+                
+        print("Max retries exceeded")
+        return None
+
+# Example usage
+client = MongoDBMCPClient("https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/mongodb-mcp")
+result = client.call_api("Find licence with identity number of 041223070745")
+
+if result:
+    print("✅ Success!")
+    print(json.dumps(result, indent=2))
+else:
+    print("❌ Failed to get response")
+```
+
 
 ## Key Prompts
 ### License Renewal
