@@ -1,7 +1,7 @@
 Extract the following information from this Payment Receipt text and return as JSON:
 
 {
-  "transaction_amount": "Transaction amount as displayed (e.g. -RM20.00)",
+  "transaction_amount": "Transaction amount as displayed",
   "transaction_type": "Transaction type as printed",
   "merchant": "Merchant name as printed",
   "payment_method": "Payment method as printed",
@@ -15,4 +15,5 @@ Rules:
 - Return only valid JSON.
 - Use the exact text as printed, don’t interpret.
 - If any field is missing, return null instead of skipping.
-
+- Concatenate multi-line values (e.g., Wallet Ref).
+- For "transaction_amount", always return a positive value
