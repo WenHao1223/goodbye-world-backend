@@ -251,3 +251,70 @@ mongo  greataihackathon --eval "show collections"
 **Total Collections**: 4  
 **Total Documents**: ~23 records  
 **Data Type**: Malaysian Government Services (TNB, JPJ)
+
+
+## Key Prompts
+### License Renewal
+1. Check for license record
+    ```bash
+    Find licence with identity number of 041223070745
+    ```
+    ```bash
+    Find licence with license number of 0107011 mZyPs9aZ
+    ```
+2. Find JPJ service account
+    ```bash
+    Find account with service from JPJ
+    ```
+3. Create transaction record
+    ```bash
+    Create transaction record via DuitNow with these transaction details:
+    {
+      "beneficiary_name": "Jabatan Pengangkutan Jalan Malaysia",
+      "beneficiary_account_number": "5123456789012345",
+      "receiving_bank": "Maybank",
+      "recipient_reference": "0488-MB-MAYBANK22/43",
+      "reference_id": "837356732M",
+      "payment_details": "license renewal",
+      "amount": "RM 40.00",
+      "successful_timestamp": "15 Sep 2025, 3:13 PM"
+    }
+    ```
+4. Extend validity (1-10 years only)
+    ```bash
+    Update licence of identity number of 041223070745, validity extend 2 years
+    ```
+    ```bash
+    Update licence of license number of 0107011 mZyPs9aZ, validity extend 2 years
+    ```
+    ```bash
+    Extend 2 years licence 041223070745
+    ```
+    ```bash
+    Extend 2 years licence 0107011 mZyPs9aZ
+    ```
+    **Note**: Validity extension must be between 1-10 years (integer values only)
+
+### TNB Bill Payment
+1. Check for unpaid TNB bills
+    ```bash
+    Find latest unpaid TNB bills for account number 220001234513
+    ```
+2. Show TnB service account details
+    ```bash
+    Find account with service from TNB
+    ```
+3. Make payment and create transaction record
+    ```bash
+    Update TNB bill 220001234513 sent via Maybank Online Banking with these transaction details:
+    {
+      "beneficiary_name": "Tenaga Nasional Berhad",
+      "beneficiary_account_number": "3987654321098765",
+      "receiving_bank": "CIMB Bank",
+      "recipient_reference": "OLB20250918003",
+      "reference_id": "OLB20250918003",
+      "payment_details": "TNB bill payment",
+      "amount": "RM 60.00",
+      "successful_timestamp": "15 Sep 2025, 3:13 PM"
+    }
+    ```

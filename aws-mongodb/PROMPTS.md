@@ -177,7 +177,28 @@ Update TnB bill with account number of 220001234513 that it has paid rm100 today
 ```bash
 Update TnB bill with account number of 220001234517 that it has paid rm50 today using Online Banking
 ```
-**Expected:** Updates TNB bill with partial payment amount (RM50), status changes to "partial" instead of "paid"
+**Expected:** Updates TNB bill with partial payment amount (RM50), status changes to "unpaid" instead of "partial"
+
+### Test Case 5.7: Full TNB Payment
+**Input:**
+```bash
+Update TnB bill with account number of 220001234517 that it has paid full today using Online Banking
+```
+**Expected:** Updates TNB bill with full payment amount, status changes to "unpaid" instead of "paid"
+
+### Test Case 5.8: TNB Payment with Transaction Creation and Beneficiary Details
+**Input:**
+```bash
+Update TNB bill 220001234513 paid to account number 3987654321098765 using Online Banking reference OLB20250918004 and record transaction
+```
+**Expected:** 
+- Updates TNB bill status to "paid"
+- Creates transaction record with beneficiary details from accounts.json:
+  - beneficiary_name: "Tenaga Nasional Berhad"
+  - beneficiary_account: "3987654321098765"
+  - beneficiary_bank: "CIMB Bank"
+  - service_type: "TNB"
+  - reference_id: "OLB20250918004"
 
 ## 6. Transaction Processing
 
@@ -191,11 +212,18 @@ Create transaction record reference 837356732M amount RM 100.00 beneficiary DELL
 ### Test Case 6.2: Process Payment Receipt
 **Input:**
 ```bash
-Process payment receipt reference 837356732M amount RM 100.00 beneficiary DELLAND PROPERTY MANAGEMENT SDN BHD account 8881013422383 date 15Sep2025
+Process payment receipt reference TNG20250925ABC124 amount RM 185.45 beneficiary Tenaga Nasional Berhad account 3987654321098765 date 25Sep2025 to paid for TNB account 220001234513
 ```
-**Expected:** Creates transaction record and updates relevant TNB bill if applicable
+**Expected:** Creates transaction record with TNB payment details and updates relevant TNB bill if applicable (full payment)
 
-### Test Case 6.3: Update TNB and Create Transaction
+### Test Case 6.3: Process Payment Receipt with Partial Amount
+**Input:**
+```bash
+Process payment receipt reference TNG20250925ABC125 amount RM 100 beneficiary Tenaga Nasional Berhad account 3987654321098765 date 25Sep2025 to paid for TNB account 220001234513
+```
+**Expected:** Creates transaction record with TNB payment details and updates relevant TNB bill if applicable (partial payment)
+
+### Test Case 6.4: Update TNB and Create Transaction
 **Input:**
 ```bash
 Update TNB bill 220001234513 paid RM 45.67 via DuitNow reference 837356732M and record transaction
@@ -241,6 +269,13 @@ Process DuitNow payment 837356732M of RM 100.00 to TNB account 220001234513 and 
 ```
 **Expected:** Updates TNB bill, creates transaction, matches beneficiary from accounts
 
+### Test Case 8.2: Complex Payment Processing
+**Input:**
+```bash
+Process DuitNow payment 837356732M of RM 100.00 to JPJ account 220001234513 and create transaction record
+```
+**Expected:** Create transaction, matches beneficiary from accounts
+
 ## 9. Multi-line Input Test Cases
 
 ### Test Case 9.1: Process Payment Receipt (Multi-line)
@@ -262,15 +297,18 @@ Update TNB bill 220001234513 and create transaction record
 Update multiple records:
 1. Mark TNB bill 220001234513 as paid
 2. Create transaction record with reference OLB20250918003
-3. Amount RM 45.67 via Online Banking
+3. Amount RM 50 via Online Banking
 4. Update payment status to successful
 ```
-**Expected:** Updates TNB bill status and creates corresponding transaction record
+**Expected:** 
+- Checks if TNB bill 220001234513 has existing pembayaran record
+- If pembayaran is null: Updates TNB bill status and creates corresponding transaction record
+- If pembayaran exists: Returns error "Bill already has payment record. No further updates allowed."
 
 ### Test Case 9.3: Complex License Update (Multi-line)
 **Input:** (Use Ctrl+Z after typing)
 ```bash
-Update license for identity 987654321098:
+Update license for identity 920308145678:
 - Extend validity by 2 years
 - Change status from expired to active
 - Set valid_from to today if currently expired
@@ -289,6 +327,9 @@ Beneficiary: DELLAND PROPERTY MANAGEMENT SDN BHD
 Account: 8881013422383
 Bank: AmBANK BERHAD
 Date: 15 Sep 2025
-Create transaction and update TNB bill if applicable
+Create transaction and update TNB bill 220001234513 if applicable
 ```
-**Expected:** Creates comprehensive transaction record and updates related TNB bill
+**Expected:** 
+- Checks if TNB bill 220001234513 has existing pembayaran record
+- If pembayaran is null: Creates transaction record and updates TNB bill
+- If pembayaran exists: Returns error "TNB bill 220001234513 already has payment record. No further updates allowed."
