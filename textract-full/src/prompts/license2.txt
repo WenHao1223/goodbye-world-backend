@@ -1,0 +1,18 @@
+Extract the following information from this Driving License text and return as JSON:
+
+{
+  "full_name": "Full name of the license holder",
+  "identity_number": "Identity No. (NRIC or Passport number)",
+  "date_of_birth": "Date of birth as printed",
+  "nationality": "Nationality as printed",
+  "license_class": "License class/category",
+  "validity_period": "Validity period of the license",
+  "address": "Full address of the license holder",
+  "license_number": "License number as printed",
+}
+
+Rules:
+- Use null for missing information
+- Extract exact text, don’t interpret, don’t translate
+- Keep dates in the exact format found on the license
+- Return only valid JSON

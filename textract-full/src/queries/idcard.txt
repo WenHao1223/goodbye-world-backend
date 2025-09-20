@@ -1,0 +1,4 @@
+What is the full name?
+What is the ID number?
+What is the address?
+What is the gender?

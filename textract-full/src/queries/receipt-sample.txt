@@ -1,6 +1,8 @@
-What is the merchant name?
-What is the transaction date?
-What is the total amount?
-What is the tax amount?
+What is the transaction amount?
+What is the transaction type?
+Who is the merchant?
 What is the payment method?
-What items were purchased?
+What is the date and time of the transaction?
+What is the wallet reference number?
+What is the transaction status?
+What is the transaction number?

@@ -1,0 +1,13 @@
+Extract the following information from this ID card text and return as JSON:
+
+{
+  "full_name": "Full name of the ID holder",
+  "id_number": "ID card number",
+  "gender": "Gender if available",
+  "address": "Full address if available",
+}
+
+Rules:
+- Use null for missing information
+- Extract exact text, don't interpret
+- Return only valid JSON

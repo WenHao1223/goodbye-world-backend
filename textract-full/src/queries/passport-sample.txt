@@ -1,8 +1,0 @@
-What is the passport number?
-What is the full name?
-What is the nationality?
-What is the date of birth?
-What is the place of birth?
-What is the issue date?
-What is the expiry date?
-What is the issuing authority?

@@ -1,0 +1,10 @@
+Extract the following information from this TNB Bill text and return as JSON:
+
+{
+  "account_number": "Exact value of No. Akaun as printed on the bill"
+}
+
+Rules:
+- Use null if No. Akaun is not found
+- Extract exact text, don't interpret or reformat
+- Return only valid JSON
