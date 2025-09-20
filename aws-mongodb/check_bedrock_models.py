@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-REGION = os.getenv("AWS_REGION", "ap-southeast-1")
+# AWS Lambda automatically provides the region via AWS_REGION1 environment variable
+REGION = os.environ.get('AWS_REGION1', 'ap-southeast-1')
 PROFILE = os.getenv("AWS_PROFILE")
 
 def build_body(model_id: str) -> tuple[bytes, str, str]:

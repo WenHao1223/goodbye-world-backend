@@ -19,7 +19,8 @@ class MongoDBMCPServer:
     def __init__(self):
         self.mongo_client = MongoClient(os.getenv("ATLAS_URI"))
         self.aws_session = boto3.Session(profile_name=os.getenv("AWS_PROFILE"))
-        self.region = os.getenv("AWS_REGION", "us-east-1")
+        # AWS Lambda automatically provides the region via AWS_REGION1 environment variable
+        self.region = os.environ.get('AWS_REGION1', 'us-east-1')
         self.sagemaker_endpoint = os.getenv("SAGEMAKER_ENDPOINT")
         self.bedrock_model_id = os.getenv("BEDROCK_MODEL_ID")
         

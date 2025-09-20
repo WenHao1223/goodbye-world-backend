@@ -1,0 +1,16 @@
+{
+  "name": "mongodb-mcp-api",
+  "version": "1.0.0",
+  "description": "MongoDB MCP API Lambda Function",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f analyze"
+  },
+  "devDependencies": {
+    "serverless-python-requirements": "^6.1.0"
+  },
+  "author": "",
+  "license": "ISC"
+}

@@ -21,7 +21,7 @@ class GovernmentServiceClient:
         return self._fallback_parse(instruction)
         
         try:
-            bedrock = boto3.client('bedrock-runtime', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+            bedrock = boto3.client('bedrock-runtime', region_name=os.getenv('AWS_REGION1', 'us-east-1'))
             
             prompt = f"""Parse Malaysian government database instruction. Return only JSON.
 

@@ -14,7 +14,10 @@ class GovernmentServiceClient:
     def __init__(self):
         self.mongo_client = MongoClient(os.getenv("ATLAS_URI"))
         self.db = self.mongo_client[os.getenv("ATLAS_DB_NAME", "greataihackathon")]
-        self.bedrock = boto3.client('bedrock-runtime', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+        # AWS Lambda automatically provides the region via AWS_REGION1 environment variable
+        # If not available, fall back to us-east-1
+        region = os.environ.get('AWS_REGION1', 'us-east-1')
+        self.bedrock = boto3.client('bedrock-runtime', region_name=region)
     
     def parse_instruction(self, instruction: str) -> dict:
         """Parse natural language instruction using AWS Bedrock"""

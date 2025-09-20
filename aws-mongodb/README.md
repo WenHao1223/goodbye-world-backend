@@ -274,7 +274,7 @@ The `main.py` script provides a natural language interface to interact with the 
    ```properties
    ATLAS_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
    ATLAS_DB_NAME=greataihackathon
-   AWS_REGION=us-east-1
+   AWS_REGION1=us-east-1
    AWS_PROFILE=your-aws-profile
    BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
    ```
