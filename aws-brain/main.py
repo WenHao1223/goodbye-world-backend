@@ -68,7 +68,7 @@ class IntentClassifier:
             request_data (dict): Request data containing userId, sessionId, message, etc.
             
         Returns:
-            dict: Response with id, reply, sessionId, attachments
+            dict: Response with messageId, message, sessionId, attachment
         """
         logger.info("=" * 80)
         logger.info("🎯 NEW REQUEST FROM LAYER I")
@@ -80,44 +80,44 @@ class IntentClassifier:
             session_id = request_data.get('session_id')
             message = request_data.get('message')
             created_at = request_data.get('created_at')
-            attachment_url = request_data.get('attachment_url', [])
+            attachment = request_data.get('attachment', [])
             
             logger.info(f"👤 User ID: {user_id}")
             logger.info(f"🔗 Session ID: {session_id}")
             logger.info(f"💬 Message: {message}")
-            logger.info(f"📎 Attachments: {attachment_url}")
+            logger.info(f"📎 attachment: {attachment}")
             
-            # Generate response ID
-            response_id = str(uuid.uuid4())
-            logger.info(f"🆔 Generated Response ID: {response_id}")
+            # Generate response ID (messageId)
+            message_id = str(uuid.uuid4())
+            logger.info(f"🆔 Generated Message ID (messageId): {message_id}")
             
             # Determine intent based on conditions
             intent_type = None
             response = None
             
-            if attachment_url and len(attachment_url) > 0:
+            if attachment and len(attachment) > 0:
                 # Intent: detect_file
                 intent_type = "detect_file"
                 logger.info("🔍 INTENT DETECTED: detect_file (attachment provided)")
-                response = self.handle_detect_file(user_id, session_id, message, attachment_url, response_id)
+                response = self.handle_detect_file(user_id, session_id, message, attachment, message_id)
             
             elif session_id == "(new-session)":
                 # Intent: first_time_connection
                 intent_type = "first_time_connection"
                 logger.info("🆕 INTENT DETECTED: first_time_connection (new session)")
-                response = self.handle_first_time_connection(user_id, message, response_id)
+                response = self.handle_first_time_connection(user_id, message, message_id)
             
             elif self.is_conversation_ending(message):
                 # Intent: new_connection
                 intent_type = "new_connection"
                 logger.info("👋 INTENT DETECTED: new_connection (conversation ending)")
-                response = self.handle_new_connection(user_id, session_id, message, response_id)
+                response = self.handle_new_connection(user_id, session_id, message, message_id)
             
             else:
                 # Regular conversation - classify intent using Bedrock
                 intent_type = "regular_conversation"
                 logger.info("💬 INTENT DETECTED: regular_conversation (bedrock classification)")
-                response = self.handle_regular_conversation(user_id, session_id, message, response_id)
+                response = self.handle_regular_conversation(user_id, session_id, message, message_id)
             
             logger.info("=" * 80)
             logger.info("📤 RESPONSE TO LAYER I")
@@ -131,15 +131,16 @@ class IntentClassifier:
         except Exception as e:
             logger.error(f"❌ Error in process_request: {str(e)}")
             error_response = {
-                'id': str(uuid.uuid4()),
-                'reply': f'Sorry, I encountered an error: {str(e)}',
+                'messageId': str(uuid.uuid4()),
+                'message': f'Sorry, I encountered an error: {str(e)}',
                 'sessionId': request_data.get('session_id', 'error'),
-                'attachments': []
+                'attachment': [],
+                'createdAt': datetime.now().isoformat()
             }
             logger.info(f"📤 Error Response: {json.dumps(error_response, indent=2)}")
             return error_response
     
-    def handle_first_time_connection(self, user_id: str, message: str, response_id: str) -> dict:
+    def handle_first_time_connection(self, user_id: str, message: str, message_id: str) -> dict:
         """
         Handle first time connection with sessionId = "(new-session)"
         """
@@ -158,7 +159,7 @@ class IntentClassifier:
             'sessionId': new_session_id,
             'createdAt': datetime.now().isoformat(),
             'messages': [{
-                'id': response_id,
+                'messageId': message_id,
                 'message': message,
                 'timestamp': datetime.now().isoformat(),
                 'type': 'user'
@@ -177,16 +178,17 @@ class IntentClassifier:
         logger.info(f"💬 Generated welcome reply: {reply}")
         
         response = {
-            'id': response_id,
-            'reply': reply,
+            'messageId': message_id,
+            'message': reply,
             'sessionId': new_session_id,
-            'attachments': []
+            'attachment': [],
+            'createdAt': datetime.now().isoformat()
         }
         
         logger.info("✅ FIRST_TIME_CONNECTION intent processing completed")
         return response
     
-    def handle_new_connection(self, user_id: str, current_session_id: str, message: str, response_id: str) -> dict:
+    def handle_new_connection(self, user_id: str, current_session_id: str, message: str, message_id: str) -> dict:
         """
         Handle conversation ending and create new session
         """
@@ -215,7 +217,7 @@ class IntentClassifier:
             'sessionId': new_session_id,
             'createdAt': datetime.now().isoformat(),
             'messages': [{
-                'id': response_id,
+                'messageId': message_id,
                 'message': message,
                 'timestamp': datetime.now().isoformat(),
                 'type': 'user'
@@ -234,16 +236,17 @@ class IntentClassifier:
         logger.info(f"💬 Generated farewell reply: {reply}")
         
         response = {
-            'id': response_id,
-            'reply': reply,
+            'messageId': message_id,
+            'message': reply,
             'sessionId': new_session_id,
-            'attachments': []
+            'attachment': [],
+            'createdAt': datetime.now().isoformat()
         }
         
         logger.info("✅ NEW_CONNECTION intent processing completed")
         return response
     
-    def handle_detect_file(self, user_id: str, session_id: str, message: str, attachment_url: list, response_id: str) -> dict:
+    def handle_detect_file(self, user_id: str, session_id: str, message: str, attachment: list, message_id: str) -> dict:
         """
         Handle file detection using textract service
         """
@@ -251,15 +254,18 @@ class IntentClassifier:
         logger.info(f"👤 User ID: {user_id}")
         logger.info(f"🔗 Session ID: {session_id}")
         logger.info(f"💬 Message: {message}")
-        logger.info(f"📎 Attachment URLs: {attachment_url}")
+        logger.info(f"📎 Attachment: {attachment}")
         
         try:
             # Call document extraction service
             logger.info("📞 Calling Layer III - Document Extraction Service")
             logger.info(f"🌐 Service URL: {self.textract_service_url}")
             
+            # Extract URL from attachment object
+            file_url = attachment[0].get('url', '') if attachment and len(attachment) > 0 else ''
+            
             request_payload = {
-                'file_url': attachment_url[0] if attachment_url else ''
+                'file_url': file_url
             }
             logger.info(f"📤 Request to textract service: {json.dumps(request_payload, indent=2)}")
             
@@ -283,11 +289,11 @@ class IntentClassifier:
                         {
                             '$push': {
                                 'messages': {
-                                    'id': response_id,
+                                    'messageId': message_id,
                                     'message': message,
                                     'timestamp': datetime.now().isoformat(),
                                     'type': 'user',
-                                    'attachment_url': attachment_url,
+                                    'attachment': attachment,
                                     'detected_category': detected_category,
                                     'extraction_result': extraction_result
                                 }
@@ -308,14 +314,15 @@ class IntentClassifier:
                 logger.info(f"💬 Generated reply: {reply}")
                 
                 response_data = {
-                    'id': response_id,
-                    'reply': reply,
+                    'messageId': message_id,
+                    'message': reply,
                     'sessionId': session_id,
-                    'attachments': [{
+                    'attachment': [{
                         'type': 'extraction_result',
                         'category': detected_category,
                         'data': extracted_data
-                    }]
+                    }],
+                    'createdAt': datetime.now().isoformat()
                 }
                 
                 logger.info("✅ DETECT_FILE intent processing completed successfully")
@@ -325,24 +332,26 @@ class IntentClassifier:
                 logger.error(f"❌ Response text: {response.text}")
                 
                 error_response = {
-                    'id': response_id,
-                    'reply': 'Sorry, I had trouble processing your document. Please try again.',
+                    'messageId': message_id,
+                    'message': 'Sorry, I had trouble processing your document. Please try again.',
                     'sessionId': session_id,
-                    'attachments': []
+                    'attachment': [],
+                    'createdAt': datetime.now().isoformat()
                 }
                 return error_response
                 
         except Exception as e:
             logger.error(f"❌ Error in handle_detect_file: {str(e)}")
             error_response = {
-                'id': response_id,
-                'reply': f'Sorry, I encountered an error while processing your document: {str(e)}',
+                'messageId': message_id,
+                'message': f'Sorry, I encountered an error while processing your document: {str(e)}',
                 'sessionId': session_id,
-                'attachments': []
+                'attachment': [],
+                'createdAt': datetime.now().isoformat()
             }
             return error_response
     
-    def handle_regular_conversation(self, user_id: str, session_id: str, message: str, response_id: str) -> dict:
+    def handle_regular_conversation(self, user_id: str, session_id: str, message: str, message_id: str) -> dict:
         """
         Handle regular conversation using Bedrock for intent classification
         """
@@ -365,7 +374,7 @@ class IntentClassifier:
                     {
                         '$push': {
                             'messages': {
-                                'id': response_id,
+                                'messageId': message_id,
                                 'message': message,
                                 'timestamp': datetime.now().isoformat(),
                                 'type': 'user',
@@ -383,10 +392,11 @@ class IntentClassifier:
             logger.info(f"💬 Generated reply: {reply}")
             
             response_data = {
-                'id': response_id,
-                'reply': reply,
+                'messageId': message_id,
+                'message': reply,
                 'sessionId': session_id,
-                'attachments': []
+                'attachment': [],
+                'createdAt': datetime.now().isoformat()
             }
             
             logger.info("✅ REGULAR_CONVERSATION intent processing completed")
@@ -395,10 +405,11 @@ class IntentClassifier:
         except Exception as e:
             logger.error(f"❌ Error in handle_regular_conversation: {str(e)}")
             error_response = {
-                'id': response_id,
-                'reply': 'I understand you want assistance. Could you please provide more details about what you need help with?',
+                'messageId': message_id,
+                'message': 'I understand you want assistance. Could you please provide more details about what you need help with?',
                 'sessionId': session_id,
-                'attachments': []
+                'attachment': [],
+                'createdAt': datetime.now().isoformat()
             }
             return error_response
     

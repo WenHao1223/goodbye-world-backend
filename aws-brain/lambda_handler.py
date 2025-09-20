@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import logging
+from datetime import datetime
 from typing import Dict, Any
 
 # Configure logging
@@ -46,12 +47,12 @@ def lambda_handler(event, context):
         session_id = body.get('sessionId', '')
         message = body.get('message', '')
         created_at = body.get('createdAt', '')
-        attachment_url = body.get('attachmentUrl', [])
+        attachment = body.get('attachment', [])
         
         logger.info(f"👤 Extracted userId: {user_id}")
         logger.info(f"🔗 Extracted sessionId: {session_id}")
         logger.info(f"💬 Extracted message: {message}")
-        logger.info(f"📎 Extracted attachmentUrl: {attachment_url}")
+        logger.info(f"📎 Extracted attachment: {attachment}")
         
         if not user_id or not session_id or not message:
             logger.warning("❌ Missing required parameters")
@@ -64,8 +65,17 @@ def lambda_handler(event, context):
                     'Access-Control-Allow-Methods': 'POST, OPTIONS'
                 },
                 'body': json.dumps({
-                    'error': 'Missing required parameters',
-                    'message': 'Please provide userId, sessionId, and message in the request body'
+                    'status': {
+                        'statusCode': '400',
+                        'message': 'Missing required parameters'
+                    },
+                    'data': {
+                        'messageId': '',
+                        'message': 'Please provide userId, sessionId, and message in the request body',
+                        'sessionId': session_id,
+                        'attachment': [],
+                        'createdAt': created_at or datetime.now().isoformat()
+                    }
                 })
             }
             logger.info(f"📤 Returning error response: {json.dumps(error_response, indent=2)}")
@@ -82,18 +92,24 @@ def lambda_handler(event, context):
             'session_id': session_id,
             'message': message,
             'created_at': created_at,
-            'attachment_url': attachment_url
+            'attachment': attachment
         })
         
         logger.info(f"✅ IntentClassifier result: {json.dumps(result, indent=2, default=str)}")
         
         # Prepare the response in the expected format
         response_data = {
-            'id': result.get('id', ''),
-            'reply': result.get('reply', ''),
-            'sessionId': result.get('sessionId', session_id),
-            'attachments': result.get('attachments', []),
-            'status': 'success'
+            'status': {
+                'statusCode': '200',
+                'message': 'Success'
+            },
+            'data': {
+                'messageId': result.get('messageId', ''),
+                'message': result.get('message', ''),
+                'sessionId': result.get('sessionId', session_id),
+                'attachment': result.get('attachment', []),
+                'createdAt': result.get('createdAt', datetime.now().isoformat())
+            }
         }
         
         final_response = {
@@ -121,12 +137,19 @@ def lambda_handler(event, context):
         logger.error(f"📚 Traceback: {traceback.format_exc()}")
         
         error_response = {
-            'error': str(e),
-            'traceback': traceback.format_exc(),
-            'status': 'failed',
-            'user_id': body.get('userId', '') if 'body' in locals() else '',
-            'session_id': body.get('sessionId', '') if 'body' in locals() else '',
-            'message': body.get('message', '') if 'body' in locals() else ''
+            'status': {
+                'statusCode': "500",
+                'message': f"Internal server error: {str(e)}"
+            },
+            'data': {
+                'messageId': body.get('userId', '') if 'body' in locals() else '',
+                'message': '',
+                'sessionId': body.get('sessionId', '') if 'body' in locals() else '',
+                'attachment': [],
+                'createdAt': datetime.now().isoformat(),
+                'error': str(e),
+                'traceback': traceback.format_exc()
+            }
         }
         
         final_error_response = {

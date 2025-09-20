@@ -14,28 +14,32 @@ def test_local():
             'session_id': '(new-session)',
             'message': 'Hello, I need help',
             'created_at': '2025-09-21T10:00:00Z',
-            'attachment_url': []
+            'attachment': []
         },
         {
             'user_id': 'test_user_123',
             'session_id': 'session_123',
             'message': 'I want to check my driving license status',
             'created_at': '2025-09-21T10:01:00Z',
-            'attachment_url': []
+            'attachment': []
         },
         {
             'user_id': 'test_user_123',
             'session_id': 'session_123',
             'message': 'Thank you for your help, goodbye',
             'created_at': '2025-09-21T10:02:00Z',
-            'attachment_url': []
+            'attachment': []
         },
         {
             'user_id': 'test_user_456',
             'session_id': 'session_456',
             'message': 'I have a document to upload',
             'created_at': '2025-09-21T10:03:00Z',
-            'attachment_url': ['https://example.com/license.jpg']
+            'attachment': [{
+                'url': 'https://example.com/license.jpg',
+                'type': 'image/jpeg',
+                'name': 'license.jpg'
+            }]
         }
     ]
     
@@ -63,7 +67,7 @@ def test_lambda_locally():
             'sessionId': '(new-session)',
             'message': 'I want to apply for a driving license',
             'createdAt': '2025-09-21T10:00:00Z',
-            'attachmentUrl': []
+            'attachment': []
         }),
         'httpMethod': 'POST'
     }
