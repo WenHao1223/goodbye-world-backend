@@ -2,20 +2,33 @@ import json
 import os
 import sys
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 
-# Configure logging
+# Configure logging for CloudWatch
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True  # Force reconfiguration
 )
 logger = logging.getLogger('aws-brain-lambda')
+
+# Ensure logs go to stdout for Lambda CloudWatch
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 # Add the current directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from main import IntentClassifier
+
+def get_iso_timestamp() -> str:
+    """
+    Get current timestamp in ISO format (UTC)
+    """
+    return datetime.now(timezone.utc).isoformat()
 
 def lambda_handler(event, context):
     """
@@ -24,6 +37,11 @@ def lambda_handler(event, context):
     logger.info("🚀 AWS Lambda handler started")
     logger.info(f"📥 Raw event: {json.dumps(event, indent=2, default=str)}")
     logger.info(f"🎯 Context: {context}")
+    
+    # Print to stdout for CloudWatch visibility
+    print("🚀 AWS Lambda handler started")
+    print(f"📥 Raw event: {json.dumps(event, indent=2, default=str)}")
+    print(f"🎯 Context: {context}")
     
     try:
         # Handle OPTIONS requests for CORS
@@ -74,7 +92,7 @@ def lambda_handler(event, context):
                         'message': 'Please provide userId, sessionId, and message in the request body',
                         'sessionId': session_id,
                         'attachment': [],
-                        'createdAt': created_at or datetime.now().isoformat()
+                        'createdAt': created_at or get_iso_timestamp()
                     }
                 })
             }
@@ -108,7 +126,7 @@ def lambda_handler(event, context):
                 'message': result.get('message', ''),
                 'sessionId': result.get('sessionId', session_id),
                 'attachment': result.get('attachment', []),
-                'createdAt': result.get('createdAt', datetime.now().isoformat())
+                'createdAt': result.get('createdAt', get_iso_timestamp())
             }
         }
         
@@ -129,12 +147,23 @@ def lambda_handler(event, context):
         logger.info(f"📤 Final response: {json.dumps(final_response, indent=2, default=str)}")
         logger.info("=" * 80)
         
+        # Print to stdout for CloudWatch visibility
+        print("=" * 80)
+        print("🎉 LAMBDA HANDLER RESPONSE TO API GATEWAY")
+        print("=" * 80)
+        print(f"📤 Final response: {json.dumps(final_response, indent=2, default=str)}")
+        print("=" * 80)
+        
         return final_response
         
     except Exception as e:
         import traceback
         logger.error(f"❌ Lambda handler error: {str(e)}")
         logger.error(f"📚 Traceback: {traceback.format_exc()}")
+        
+        # Print to stdout for CloudWatch visibility
+        print(f"❌ Lambda handler error: {str(e)}")
+        print(f"📚 Traceback: {traceback.format_exc()}")
         
         error_response = {
             'status': {
@@ -146,7 +175,7 @@ def lambda_handler(event, context):
                 'message': '',
                 'sessionId': body.get('sessionId', '') if 'body' in locals() else '',
                 'attachment': [],
-                'createdAt': datetime.now().isoformat(),
+                'createdAt': get_iso_timestamp(),
                 'error': str(e),
                 'traceback': traceback.format_exc()
             }

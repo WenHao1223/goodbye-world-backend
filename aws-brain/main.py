@@ -10,12 +10,20 @@ from pymongo import MongoClient
 import os
 import boto3
 
-# Configure logging
+# Configure logging for CloudWatch
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True  # Force reconfiguration
 )
 logger = logging.getLogger('aws-brain')
+
+# Also ensure logs go to stdout for Lambda CloudWatch
+import sys
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 # Load environment variables only if not in Lambda
 if not os.getenv('LAMBDA_RUNTIME'):
@@ -38,8 +46,8 @@ class IntentClassifier:
         
         try:
             self.mongo_client = MongoClient(os.getenv("ATLAS_URI"))
-            self.db = self.mongo_client[os.getenv("ATLAS_DB_NAME", "greataihackathon")]
-            logger.info(f"✅ MongoDB connected to database: {os.getenv('ATLAS_DB_NAME', 'greataihackathon')}")
+            self.db = self.mongo_client[os.getenv("ATLAS_DB_NAME", "chat")]
+            logger.info(f"✅ MongoDB connected to database: {os.getenv('ATLAS_DB_NAME', 'chat')}")
         except Exception as e:
             logger.error(f"❌ MongoDB connection failed: {str(e)}")
             raise
@@ -60,6 +68,26 @@ class IntentClassifier:
         
         logger.info("🎯 IntentClassifier initialization completed successfully")
     
+    def get_iso_timestamp(self) -> str:
+        """
+        Get current timestamp in ISO format (UTC)
+        """
+        from datetime import timezone
+        return datetime.now(timezone.utc).isoformat()
+    
+    def ensure_collection_indexes(self, collection_name: str):
+        """
+        Ensure proper indexes are created for the WhatsApp number collection
+        """
+        try:
+            collection = self.db[collection_name]
+            # Create index on userId and sessionId for faster queries
+            collection.create_index([("userId", 1), ("sessionId", 1)])
+            collection.create_index([("createdAt", 1)])
+            logger.info(f"✅ Indexes ensured for collection '{collection_name}'")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not create indexes for collection '{collection_name}': {str(e)}")
+    
     def process_request(self, request_data: dict) -> dict:
         """
         Process the incoming request and determine the appropriate response
@@ -74,6 +102,12 @@ class IntentClassifier:
         logger.info("🎯 NEW REQUEST FROM LAYER I")
         logger.info("=" * 80)
         logger.info(f"📥 Request received: {json.dumps(request_data, indent=2)}")
+        
+        # Print to stdout for CloudWatch visibility
+        print("=" * 80)
+        print("🎯 NEW REQUEST FROM LAYER I")
+        print("=" * 80)
+        print(f"📥 Request received: {json.dumps(request_data, indent=2)}")
         
         try:
             user_id = request_data.get('user_id')
@@ -99,24 +133,28 @@ class IntentClassifier:
                 # Intent: detect_file
                 intent_type = "detect_file"
                 logger.info("🔍 INTENT DETECTED: detect_file (attachment provided)")
+                print("🔍 INTENT DETECTED: detect_file (attachment provided)")  # CloudWatch visibility
                 response = self.handle_detect_file(user_id, session_id, message, attachment, message_id)
             
             elif session_id == "(new-session)":
                 # Intent: first_time_connection
                 intent_type = "first_time_connection"
                 logger.info("🆕 INTENT DETECTED: first_time_connection (new session)")
+                print("🆕 INTENT DETECTED: first_time_connection (new session)")  # CloudWatch visibility
                 response = self.handle_first_time_connection(user_id, message, message_id)
             
             elif self.is_conversation_ending(message):
                 # Intent: new_connection
                 intent_type = "new_connection"
                 logger.info("👋 INTENT DETECTED: new_connection (conversation ending)")
+                print("👋 INTENT DETECTED: new_connection (conversation ending)")  # CloudWatch visibility
                 response = self.handle_new_connection(user_id, session_id, message, message_id)
             
             else:
                 # Regular conversation - classify intent using Bedrock
                 intent_type = "regular_conversation"
                 logger.info("💬 INTENT DETECTED: regular_conversation (bedrock classification)")
+                print("💬 INTENT DETECTED: regular_conversation (bedrock classification)")  # CloudWatch visibility
                 response = self.handle_regular_conversation(user_id, session_id, message, message_id)
             
             logger.info("=" * 80)
@@ -126,18 +164,29 @@ class IntentClassifier:
             logger.info(f"📥 Response: {json.dumps(response, indent=2)}")
             logger.info("=" * 80)
             
+            # Print to stdout for CloudWatch visibility
+            print("=" * 80)
+            print("📤 RESPONSE TO LAYER I")
+            print("=" * 80)
+            print(f"🎯 Intent Type: {intent_type}")
+            print(f"📥 Response: {json.dumps(response, indent=2)}")
+            print("=" * 80)
+            
             return response
                 
         except Exception as e:
             logger.error(f"❌ Error in process_request: {str(e)}")
+            print(f"❌ ERROR in process_request: {str(e)}")  # CloudWatch visibility
+            
             error_response = {
                 'messageId': str(uuid.uuid4()),
                 'message': f'Sorry, I encountered an error: {str(e)}',
                 'sessionId': request_data.get('session_id', 'error'),
                 'attachment': [],
-                'createdAt': datetime.now().isoformat()
+                'createdAt': self.get_iso_timestamp()
             }
             logger.info(f"📤 Error Response: {json.dumps(error_response, indent=2)}")
+            print(f"📤 ERROR Response: {json.dumps(error_response, indent=2)}")  # CloudWatch visibility
             return error_response
     
     def handle_first_time_connection(self, user_id: str, message: str, message_id: str) -> dict:
@@ -152,16 +201,23 @@ class IntentClassifier:
         new_session_id = str(uuid.uuid4())
         logger.info(f"🆔 Generated new session ID: {new_session_id}")
         
-        # Store session in chat database
-        chat_collection = self.db.chat
+        # Store session in WhatsApp number-specific collection
+        # Use userId as collection name (e.g., "60123456789")
+        collection_name = user_id
+        chat_collection = self.db[collection_name]
+        logger.info(f"💾 Using collection: {collection_name}")
+        
+        # Ensure indexes exist for this collection
+        self.ensure_collection_indexes(collection_name)
+        
         chat_doc = {
             'userId': user_id,
             'sessionId': new_session_id,
-            'createdAt': datetime.now().isoformat(),
+            'createdAt': self.get_iso_timestamp(),
             'messages': [{
                 'messageId': message_id,
                 'message': message,
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': self.get_iso_timestamp(),
                 'type': 'user'
             }],
             'status': 'active'
@@ -169,9 +225,9 @@ class IntentClassifier:
         
         try:
             insert_result = chat_collection.insert_one(chat_doc)
-            logger.info(f"✅ Session stored in MongoDB chat collection. Document ID: {insert_result.inserted_id}")
+            logger.info(f"✅ Session stored in MongoDB collection '{collection_name}'. Document ID: {insert_result.inserted_id}")
         except Exception as e:
-            logger.error(f"❌ Failed to store session in MongoDB: {str(e)}")
+            logger.error(f"❌ Failed to store session in MongoDB collection '{collection_name}': {str(e)}")
         
         # Generate welcome response
         reply = "Hello! Welcome to the government services assistant. How can I help you today?"
@@ -182,7 +238,7 @@ class IntentClassifier:
             'message': reply,
             'sessionId': new_session_id,
             'attachment': [],
-            'createdAt': datetime.now().isoformat()
+            'createdAt': self.get_iso_timestamp()
         }
         
         logger.info("✅ FIRST_TIME_CONNECTION intent processing completed")
@@ -197,15 +253,19 @@ class IntentClassifier:
         logger.info(f"🔗 Current session ID: {current_session_id}")
         logger.info(f"💬 Ending message: {message}")
         
-        # Close current session
+        # Close current session in WhatsApp number-specific collection
+        collection_name = user_id
+        chat_collection = self.db[collection_name]
+        logger.info(f"💾 Using collection: {collection_name}")
+        
         try:
-            update_result = self.db.chat.update_one(
+            update_result = chat_collection.update_one(
                 {'userId': user_id, 'sessionId': current_session_id},
-                {'$set': {'status': 'closed', 'closedAt': datetime.now().isoformat()}}
+                {'$set': {'status': 'closed', 'closedAt': self.get_iso_timestamp()}}
             )
-            logger.info(f"✅ Closed current session. Modified count: {update_result.modified_count}")
+            logger.info(f"✅ Closed current session in collection '{collection_name}'. Modified count: {update_result.modified_count}")
         except Exception as e:
-            logger.error(f"❌ Failed to close session in MongoDB: {str(e)}")
+            logger.error(f"❌ Failed to close session in MongoDB collection '{collection_name}': {str(e)}")
         
         # Generate new session ID
         new_session_id = str(uuid.uuid4())
@@ -215,21 +275,21 @@ class IntentClassifier:
         chat_doc = {
             'userId': user_id,
             'sessionId': new_session_id,
-            'createdAt': datetime.now().isoformat(),
+            'createdAt': self.get_iso_timestamp(),
             'messages': [{
                 'messageId': message_id,
                 'message': message,
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': self.get_iso_timestamp(),
                 'type': 'user'
             }],
             'status': 'active'
         }
         
         try:
-            insert_result = self.db.chat.insert_one(chat_doc)
-            logger.info(f"✅ New session stored in MongoDB. Document ID: {insert_result.inserted_id}")
+            insert_result = chat_collection.insert_one(chat_doc)
+            logger.info(f"✅ New session stored in MongoDB collection '{collection_name}'. Document ID: {insert_result.inserted_id}")
         except Exception as e:
-            logger.error(f"❌ Failed to create new session in MongoDB: {str(e)}")
+            logger.error(f"❌ Failed to create new session in MongoDB collection '{collection_name}': {str(e)}")
         
         # Generate farewell and new conversation response
         reply = "Thank you for using our service! I'm here to help with a new request. What can I assist you with?"
@@ -240,7 +300,7 @@ class IntentClassifier:
             'message': reply,
             'sessionId': new_session_id,
             'attachment': [],
-            'createdAt': datetime.now().isoformat()
+            'createdAt': self.get_iso_timestamp()
         }
         
         logger.info("✅ NEW_CONNECTION intent processing completed")
@@ -281,17 +341,19 @@ class IntentClassifier:
                 logger.info(f"🏷️ Detected category: {detected_category}")
                 logger.info(f"📊 Extracted data: {json.dumps(extracted_data, indent=2)}")
                 
-                # Store result to chat database
-                logger.info("💾 Storing extraction result to MongoDB chat collection")
+                # Store result to WhatsApp number-specific collection
+                collection_name = user_id
+                chat_collection = self.db[collection_name]
+                logger.info(f"💾 Storing extraction result to MongoDB collection '{collection_name}'")
                 try:
-                    update_result = self.db.chat.update_one(
+                    update_result = chat_collection.update_one(
                         {'userId': user_id, 'sessionId': session_id},
                         {
                             '$push': {
                                 'messages': {
                                     'messageId': message_id,
                                     'message': message,
-                                    'timestamp': datetime.now().isoformat(),
+                                    'timestamp': self.get_iso_timestamp(),
                                     'type': 'user',
                                     'attachment': attachment,
                                     'detected_category': detected_category,
@@ -300,9 +362,9 @@ class IntentClassifier:
                             }
                         }
                     )
-                    logger.info(f"✅ Stored to chat collection. Modified count: {update_result.modified_count}")
+                    logger.info(f"✅ Stored to collection '{collection_name}'. Modified count: {update_result.modified_count}")
                 except Exception as e:
-                    logger.error(f"❌ Failed to store to chat collection: {str(e)}")
+                    logger.error(f"❌ Failed to store to collection '{collection_name}': {str(e)}")
                 
                 # Check for unique identities and store to user database
                 if extracted_data:
@@ -322,7 +384,7 @@ class IntentClassifier:
                         'category': detected_category,
                         'data': extracted_data
                     }],
-                    'createdAt': datetime.now().isoformat()
+                    'createdAt': self.get_iso_timestamp()
                 }
                 
                 logger.info("✅ DETECT_FILE intent processing completed successfully")
@@ -336,7 +398,7 @@ class IntentClassifier:
                     'message': 'Sorry, I had trouble processing your document. Please try again.',
                     'sessionId': session_id,
                     'attachment': [],
-                    'createdAt': datetime.now().isoformat()
+                    'createdAt': self.get_iso_timestamp()
                 }
                 return error_response
                 
@@ -347,7 +409,7 @@ class IntentClassifier:
                 'message': f'Sorry, I encountered an error while processing your document: {str(e)}',
                 'sessionId': session_id,
                 'attachment': [],
-                'createdAt': datetime.now().isoformat()
+                'createdAt': self.get_iso_timestamp()
             }
             return error_response
     
@@ -366,26 +428,28 @@ class IntentClassifier:
             intent_result = self.classify_intent_with_bedrock(message)
             logger.info(f"✅ Bedrock classification result: {json.dumps(intent_result, indent=2)}")
             
-            # Update chat with user message
-            logger.info("💾 Storing conversation to MongoDB chat collection")
+            # Update WhatsApp number-specific collection with user message
+            collection_name = user_id
+            chat_collection = self.db[collection_name]
+            logger.info(f"💾 Storing conversation to MongoDB collection '{collection_name}'")
             try:
-                update_result = self.db.chat.update_one(
+                update_result = chat_collection.update_one(
                     {'userId': user_id, 'sessionId': session_id},
                     {
                         '$push': {
                             'messages': {
                                 'messageId': message_id,
                                 'message': message,
-                                'timestamp': datetime.now().isoformat(),
+                                'timestamp': self.get_iso_timestamp(),
                                 'type': 'user',
                                 'intent': intent_result.get('intent', 'unknown')
                             }
                         }
                     }
                 )
-                logger.info(f"✅ Stored to chat collection. Modified count: {update_result.modified_count}")
+                logger.info(f"✅ Stored to collection '{collection_name}'. Modified count: {update_result.modified_count}")
             except Exception as e:
-                logger.error(f"❌ Failed to store to chat collection: {str(e)}")
+                logger.error(f"❌ Failed to store to collection '{collection_name}': {str(e)}")
             
             # Generate response based on intent
             reply = self.generate_intent_response(intent_result, message)
@@ -396,7 +460,7 @@ class IntentClassifier:
                 'message': reply,
                 'sessionId': session_id,
                 'attachment': [],
-                'createdAt': datetime.now().isoformat()
+                'createdAt': self.get_iso_timestamp()
             }
             
             logger.info("✅ REGULAR_CONVERSATION intent processing completed")
@@ -409,7 +473,7 @@ class IntentClassifier:
                 'message': 'I understand you want assistance. Could you please provide more details about what you need help with?',
                 'sessionId': session_id,
                 'attachment': [],
-                'createdAt': datetime.now().isoformat()
+                'createdAt': self.get_iso_timestamp()
             }
             return error_response
     
@@ -518,7 +582,7 @@ Return JSON format:
                     {
                         '$set': {
                             'userId': user_id,
-                            'lastUpdated': datetime.now().isoformat(),
+                            'lastUpdated': self.get_iso_timestamp(),
                             **user_identities
                         }
                     },

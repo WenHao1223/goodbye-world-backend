@@ -1,5 +1,12 @@
 import json
+from datetime import datetime, timezone
 from main import IntentClassifier
+
+def get_iso_timestamp() -> str:
+    """
+    Get current timestamp in ISO format (UTC)
+    """
+    return datetime.now(timezone.utc).isoformat()
 
 def test_local():
     """
@@ -8,33 +15,34 @@ def test_local():
     classifier = IntentClassifier()
     
     # Test cases for different intents
+    current_time = get_iso_timestamp()
     test_requests = [
         {
             'user_id': 'test_user_123',
             'session_id': '(new-session)',
             'message': 'Hello, I need help',
-            'created_at': '2025-09-21T10:00:00Z',
+            'created_at': current_time,
             'attachment': []
         },
         {
             'user_id': 'test_user_123',
             'session_id': 'session_123',
             'message': 'I want to check my driving license status',
-            'created_at': '2025-09-21T10:01:00Z',
+            'created_at': current_time,
             'attachment': []
         },
         {
             'user_id': 'test_user_123',
             'session_id': 'session_123',
             'message': 'Thank you for your help, goodbye',
-            'created_at': '2025-09-21T10:02:00Z',
+            'created_at': current_time,
             'attachment': []
         },
         {
             'user_id': 'test_user_456',
             'session_id': 'session_456',
             'message': 'I have a document to upload',
-            'created_at': '2025-09-21T10:03:00Z',
+            'created_at': current_time,
             'attachment': [{
                 'url': 'https://example.com/license.jpg',
                 'type': 'image/jpeg',
@@ -66,7 +74,7 @@ def test_lambda_locally():
             'userId': 'test_user_123',
             'sessionId': '(new-session)',
             'message': 'I want to apply for a driving license',
-            'createdAt': '2025-09-21T10:00:00Z',
+            'createdAt': get_iso_timestamp(),
             'attachment': []
         }),
         'httpMethod': 'POST'
