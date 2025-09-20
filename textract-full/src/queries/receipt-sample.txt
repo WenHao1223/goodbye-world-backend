@@ -1,7 +1,6 @@
 What is the transaction amount?
 What is the transaction type?
 Who is the merchant?
-What are the payment details?
 What is the payment method?
 What is the date and time of the transaction?
 What is the wallet reference number?
