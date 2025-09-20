@@ -242,6 +242,9 @@ def create_test_html():
 }`)" class="copy-btn">📋</button>
                 </div>
             </div>
+            <div class="more">
+                <p style="color: #666; font-size: 0.8em;">More prompts refer <a target="_blank" style="color: #666;" href="https://github.com/WenHao1223/great-ai-hackathon-test/blob/master/aws-mongodb/PROMPTS.md">here</a>.</p>
+            </div>
         </div>
         
         <form id="testForm">
