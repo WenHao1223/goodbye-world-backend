@@ -428,37 +428,119 @@ class IntentClassifier:
             intent_result = self.classify_intent_with_bedrock(message)
             logger.info(f"✅ Bedrock classification result: {json.dumps(intent_result, indent=2)}")
             
-            # Update WhatsApp number-specific collection with user message
+            # Extract topic from intent result
+            topic = intent_result.get('topic', None)
+            intent_name = intent_result.get('intent', 'unknown')
+            
             collection_name = user_id
             chat_collection = self.db[collection_name]
-            logger.info(f"💾 Storing conversation to MongoDB collection '{collection_name}'")
-            try:
-                update_result = chat_collection.update_one(
-                    {'userId': user_id, 'sessionId': session_id},
-                    {
-                        '$push': {
-                            'messages': {
-                                'messageId': message_id,
-                                'message': message,
-                                'timestamp': self.get_iso_timestamp(),
-                                'type': 'user',
-                                'intent': intent_result.get('intent', 'unknown')
-                            }
-                        }
-                    }
-                )
-                logger.info(f"✅ Stored to collection '{collection_name}'. Modified count: {update_result.modified_count}")
-            except Exception as e:
-                logger.error(f"❌ Failed to store to collection '{collection_name}': {str(e)}")
+            logger.info(f"💾 Processing conversation for MongoDB collection '{collection_name}'")
             
-            # Generate response based on intent
+            # Check if topic is detected and different from current session
+            current_session_id = session_id
+            
+            if topic:
+                logger.info(f"🏷️ Topic detected: {topic}")
+                
+                # Check if current session already has this topic
+                current_session = chat_collection.find_one({'userId': user_id, 'sessionId': session_id})
+                current_topic = None
+                
+                if current_session:
+                    # Check if any message in current session has a topic
+                    for msg in current_session.get('messages', []):
+                        if 'topic' in msg:
+                            current_topic = msg['topic']
+                            break
+                
+                if current_topic != topic:
+                    # Create new session for new topic
+                    new_session_id = str(uuid.uuid4())
+                    logger.info(f"🆔 Creating new session for new topic '{topic}': {new_session_id}")
+                    
+                    # Close current session if it exists
+                    if current_session:
+                        try:
+                            chat_collection.update_one(
+                                {'userId': user_id, 'sessionId': session_id},
+                                {'$set': {'status': 'closed', 'closedAt': self.get_iso_timestamp()}}
+                            )
+                            logger.info(f"✅ Closed previous session: {session_id}")
+                        except Exception as e:
+                            logger.error(f"❌ Failed to close previous session: {str(e)}")
+                    
+                    # Create new session document with topic
+                    new_session_doc = {
+                        'userId': user_id,
+                        'sessionId': new_session_id,
+                        'createdAt': self.get_iso_timestamp(),
+                        'topic': topic,  # Store topic at session level
+                        'messages': [{
+                            'messageId': message_id,
+                            'message': message,
+                            'timestamp': self.get_iso_timestamp(),
+                            'type': 'user',
+                            'intent': intent_name,
+                            'topic': topic
+                        }],
+                        'status': 'active'
+                    }
+                    
+                    try:
+                        insert_result = chat_collection.insert_one(new_session_doc)
+                        logger.info(f"✅ Created new session document with topic. Document ID: {insert_result.inserted_id}")
+                        current_session_id = new_session_id
+                    except Exception as e:
+                        logger.error(f"❌ Failed to create new session document: {str(e)}")
+                        current_session_id = session_id  # Fall back to original session
+                else:
+                    # Same topic, continue current session
+                    logger.info(f"ℹ️ Same topic '{topic}', continuing current session: {session_id}")
+                    try:
+                        message_doc = {
+                            'messageId': message_id,
+                            'message': message,
+                            'timestamp': self.get_iso_timestamp(),
+                            'type': 'user',
+                            'intent': intent_name,
+                            'topic': topic
+                        }
+                        
+                        update_result = chat_collection.update_one(
+                            {'userId': user_id, 'sessionId': session_id},
+                            {'$push': {'messages': message_doc}}
+                        )
+                        logger.info(f"✅ Added message to existing session. Modified count: {update_result.modified_count}")
+                    except Exception as e:
+                        logger.error(f"❌ Failed to add message to existing session: {str(e)}")
+            else:
+                # No topic detected, continue current session
+                logger.info("ℹ️ No topic detected, continuing current session")
+                try:
+                    message_doc = {
+                        'messageId': message_id,
+                        'message': message,
+                        'timestamp': self.get_iso_timestamp(),
+                        'type': 'user',
+                        'intent': intent_name
+                    }
+                    
+                    update_result = chat_collection.update_one(
+                        {'userId': user_id, 'sessionId': session_id},
+                        {'$push': {'messages': message_doc}}
+                    )
+                    logger.info(f"✅ Added message to current session. Modified count: {update_result.modified_count}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to add message to current session: {str(e)}")
+            
+            # Generate response based on intent (including validation requests)
             reply = self.generate_intent_response(intent_result, message)
-            logger.info(f"💬 Generated reply: {reply}")
+            logger.info(f"💬 Generated reply with validation request: {reply}")
             
             response_data = {
                 'messageId': message_id,
                 'message': reply,
-                'sessionId': session_id,
+                'sessionId': current_session_id,  # Use current or new session ID
                 'attachment': [],
                 'createdAt': self.get_iso_timestamp()
             }
@@ -491,7 +573,7 @@ class IntentClassifier:
     
     def classify_intent_with_bedrock(self, message: str) -> dict:
         """
-        Use AWS Bedrock to classify the intent of the message
+        Use AWS Bedrock to classify the intent of the message and determine topic
         """
         logger.info("🤖 Starting Bedrock intent classification")
         logger.info(f"💬 Message to classify: {message}")
@@ -501,7 +583,9 @@ class IntentClassifier:
 Message: "{message}"
 
 Available intents and their descriptions:
-- license_inquiry: Questions about driving license, license application, license renewal, license status
+- renew_license: User wants to renew their driving license
+- pay_tnb_bill: User wants to pay TNB electricity bill
+- license_inquiry: Questions about driving license, license application, license status
 - tnb_inquiry: Questions about TNB bills, electricity bills, TNB account, power bills
 - jpj_inquiry: Questions about JPJ services, vehicle registration, road tax
 - account_inquiry: Questions about service accounts, account details, account management
@@ -511,11 +595,16 @@ Available intents and their descriptions:
 - greeting: Greetings, introductions, how are you messages
 - unknown: Cannot determine intent from the message
 
+For specific topics, map the intent to these topics:
+- renew_license → topic: "renew license"
+- pay_tnb_bill → topic: "pay tnb bill"
+
 Return JSON format:
 {{
     "intent": "intent_name",
     "confidence": 0.95,
     "category": "government_service_category",
+    "topic": "specific_topic_name",
     "suggested_actions": ["action1", "action2"]
 }}"""
 
@@ -609,11 +698,13 @@ Return JSON format:
     
     def generate_intent_response(self, intent_result: dict, original_message: str) -> str:
         """
-        Generate response based on classified intent
+        Generate response based on classified intent with validation requests
         """
         intent = intent_result.get('intent', 'unknown')
         
         responses = {
+            'renew_license': "I can help you renew your driving license. To proceed with the renewal and verify your identity, please upload a photo of your IC (Identity Card) or current driving license. This will help me validate your details and assist you better.",
+            'pay_tnb_bill': "I can assist you with paying your TNB electricity bill. To proceed with the payment and verify your account, please take a photo of the upper part of your TNB bill (showing your account details and amount due). This will help me process your payment accurately.",
             'license_inquiry': "I can help you with driving license services. Would you like to check license status, apply for renewal, or get information about license requirements?",
             'tnb_inquiry': "I can assist you with TNB electricity bill services. Would you like to check your bill status, view payment history, or process a payment?",
             'jpj_inquiry': "I can help you with JPJ vehicle services. Would you like information about vehicle registration, road tax, or other JPJ services?",
