@@ -545,39 +545,86 @@ class IntentClassifier:
             chat_collection = self.db[collection_name]
             logger.info(f"💾 Processing conversation for MongoDB collection '{collection_name}'")
             
-            # PRIORITY CHECK: Handle verified license documents that need renewal process
+            # ABSOLUTE PRIORITY CHECK FIRST: Handle extendYear license renewal workflow before ANY other logic
             current_session = chat_collection.find_one({'userId': user_id, 'sessionId': session_id})
             if current_session:
-                is_validated = current_session.get('isValidate', False)
-                document_category = current_session.get('document_category', '')
+                extend_year = current_session.get('extendYear', False)
                 awaiting_year_selection = current_session.get('awaiting_year_selection', False)
                 awaiting_payment = current_session.get('awaiting_payment_receipt', False)
                 
-                logger.info(f"🔍 Priority check - isValidate: {is_validated}, category: {document_category}, awaiting_year: {awaiting_year_selection}, awaiting_payment: {awaiting_payment}")
+                logger.info(f"🔍 ABSOLUTE PRIORITY CHECK - extendYear: {extend_year}, awaiting_year: {awaiting_year_selection}, awaiting_payment: {awaiting_payment}")
                 
-                # If document is verified and it's a license, prioritize renewal flow
-                if is_validated and document_category == 'license':
-                    logger.info("🎯 PRIORITY: Verified license document - checking renewal flow")
+                if extend_year:
+                    logger.info("🚨 ABSOLUTE PRIORITY: extendYear flag detected - license renewal workflow ONLY")
                     
-                    # Check if user is selecting years
+                    # Check if user is selecting years during license renewal
                     if awaiting_year_selection:
-                        logger.info("📅 User is in year selection flow")
+                        logger.info("📅 PRIORITY: User is in year selection flow during license renewal - BYPASSING all other logic")
                         year_result = self.handle_year_selection(user_id, session_id, message, message_id, chat_collection)
                         if year_result:
                             return year_result
+                    
+                    # Check if user is uploading payment receipt during license renewal
+                    elif awaiting_payment:
+                        logger.info("💳 PRIORITY: User is uploading payment receipt during license renewal")
+                        # Let this continue to attachment processing
+                        pass
+                    
+                    # If extendYear is set but no specific waiting state, guide user back to year selection
+                    else:
+                        logger.info("🔄 PRIORITY: extendYear set but no waiting state - redirecting to year selection")
+                        
+                        # Re-set awaiting year selection state
+                        try:
+                            chat_collection.update_one(
+                                {'userId': user_id, 'sessionId': session_id},
+                                {'$set': {'awaiting_year_selection': True}}
+                            )
+                        except Exception as e:
+                            logger.error(f"❌ Failed to set awaiting year selection: {str(e)}")
+                        
+                        return {
+                            'messageId': message_id,
+                            'message': """🔄 **License Renewal in Progress**
+
+How many years would you like to extend your driving license validity?
+
+**Available Options:**
+• 1️⃣ **1 Year** - RM 30.00
+• 2️⃣ **2 Years** - RM 60.00  
+• 3️⃣ **3 Years** - RM 90.00
+• 4️⃣ **4 Years** - RM 120.00
+• 5️⃣ **5 Years** - RM 150.00
+
+Please reply with the number of years you want to extend (e.g., "2 years" or just "2").""",
+                            'sessionId': session_id,
+                            'attachment': [],
+                            'createdAt': self.get_iso_timestamp()
+                        }
+            
+            # Basic document validation checks (only if extendYear not set)
+            if current_session:
+                is_validated = current_session.get('isValidate', False)
+                document_category = current_session.get('document_category', '')
+                
+                logger.info(f"🔍 Basic check - isValidate: {is_validated}, category: {document_category}")
+                
+                # Handle verified license documents
+                if is_validated and document_category == 'license':
+                    logger.info("🎯 PRIORITY: Verified license document - checking renewal flow")
                     
                     # Check if user is confirming again (they said "yes" but already verified)
                     confirmation_keywords = ['yes', 'correct', 'confirm', 'ok', 'okay', 'right', 'true', 'accurate']
                     is_confirming = any(keyword in message.lower() for keyword in confirmation_keywords)
                     
-                    if is_confirming and not awaiting_year_selection and not awaiting_payment:
+                    if is_confirming:
                         logger.info("🔄 User confirming again - directing to year selection")
                         
-                        # Mark as awaiting year selection
+                        # Mark as awaiting year selection and add extendYear flag
                         try:
                             chat_collection.update_one(
                                 {'userId': user_id, 'sessionId': session_id},
-                                {'$set': {'awaiting_year_selection': True}}
+                                {'$set': {'awaiting_year_selection': True, 'extendYear': True}}
                             )
                         except Exception as e:
                             logger.error(f"❌ Failed to mark as awaiting year selection: {str(e)}")
@@ -691,7 +738,8 @@ How can I assist you today? 🤝""",
                             'createdAt': self.get_iso_timestamp()
                         }
             
-            # Classify intent using Bedrock
+            
+            # Classify intent using Bedrock (only if not handled by extendYear priority)
             logger.info("🤖 Calling Layer III - AWS Bedrock for intent classification")
             intent_result = self.classify_intent_with_bedrock(message)
             logger.info(f"✅ Bedrock classification result: {json.dumps(intent_result, indent=2)}")
@@ -699,6 +747,8 @@ How can I assist you today? 🤝""",
             # Extract topic from intent result
             topic = intent_result.get('topic', None)
             intent_name = intent_result.get('intent', 'unknown')
+            
+            logger.info(f"🎯 Extracted intent: '{intent_name}', topic: '{topic}'")
             
             # Check if topic is detected and different from current session
             current_session_id = session_id
@@ -857,6 +907,18 @@ How can I assist you today? 🤝""",
                 except Exception as e:
                     logger.error(f"❌ Failed to add message to current session: {str(e)}")
             
+            # Clear extendYear field for all intents except check_context (which can restore license renewal context)
+            if intent_name != 'check_context':
+                try:
+                    clear_result = chat_collection.update_one(
+                        {'userId': user_id, 'sessionId': current_session_id, 'extendYear': {'$exists': True}},
+                        {'$unset': {'extendYear': ''}}
+                    )
+                    if clear_result.modified_count > 0:
+                        logger.info(f"🔄 Cleared extendYear field for intent: {intent_name}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to clear extendYear field: {str(e)}")
+
             # Check if specific intents require document upload
             requires_document_upload = intent_name in ['renew_license', 'pay_tnb_bill']
             document_already_uploaded = self.check_document_uploaded_in_session(user_id, current_session_id, intent_name)
@@ -875,6 +937,8 @@ How can I assist you today? 🤝""",
                 logger.info("🔍 Handling check_context intent - looking up recent document data")
                 context_result = self.check_recent_document_context(user_id, current_session_id)
                 reply = context_result.get('message', 'I need more context to assist you properly.')
+                
+                logger.info(f"🔍 Context check result - has_context: {context_result.get('has_context')}, requires_confirmation: {context_result.get('requires_confirmation')}")
                 
                 # If we found context and user is confirming, update validation status
                 if context_result.get('has_context') and context_result.get('requires_confirmation'):
@@ -1548,6 +1612,54 @@ Please select between 1 to 5 years only.
             
             logger.info(f"✅ User selected {years} years, amount: RM {amount}")
             
+            # Get current session data to extract IC number
+            current_session = chat_collection.find_one({'userId': user_id, 'sessionId': session_id})
+            if current_session:
+                extracted_data = current_session.get('data', {}) or current_session.get('extracted_data', {})
+                ic_number = extracted_data.get('id_number', extracted_data.get('ic_number', extracted_data.get('identity_number', '')))
+                license_number = extracted_data.get('license_number', extracted_data.get('license_no', ''))
+                
+                logger.info(f"🆔 Extracted IC number: {ic_number}")
+                logger.info(f"🪪 Extracted license number: {license_number}")
+                
+                # Call MongoDB MCP API to extend license validity
+                if ic_number or license_number:
+                    logger.info("🌐 Calling MongoDB MCP API to extend license validity")
+                    try:
+                        api_url = "https://xlxakmb2sf.execute-api.us-east-1.amazonaws.com/dev/mongodb-mcp"
+                        
+                        # Create instruction for license extension
+                        if license_number and ic_number:
+                            instruction = f"Extend validity of licence number {license_number} of ic {ic_number} for {years} years"
+                        elif ic_number:
+                            instruction = f"Extend validity of licence of ic {ic_number} for {years} years"
+                        elif license_number:
+                            instruction = f"Extend validity of licence number {license_number} for {years} years"
+                        
+                        payload = {
+                            "instruction": instruction
+                        }
+                        
+                        logger.info(f"📤 License extension API request: {json.dumps(payload, indent=2)}")
+                        print(f"🌐 License Extension API Request: {json.dumps(payload, indent=2)}")
+                        
+                        response = requests.post(api_url, json=payload, timeout=30)
+                        logger.info(f"📥 License extension API response status: {response.status_code}")
+                        
+                        if response.status_code == 200:
+                            extension_result = response.json()
+                            logger.info(f"✅ License extension API success: {json.dumps(extension_result, indent=2)}")
+                            print(f"✅ License Extension API Response: {json.dumps(extension_result, indent=2)}")
+                        else:
+                            logger.error(f"❌ License extension API error: {response.status_code} - {response.text}")
+                            print(f"❌ License Extension API Error: {response.status_code} - {response.text}")
+                            
+                    except Exception as e:
+                        logger.error(f"❌ Error calling license extension API: {str(e)}")
+                        print(f"❌ License Extension API Error: {str(e)}")
+                else:
+                    logger.warning("⚠️ No IC number or license number found - cannot extend license validity")
+            
             # Save year selection and amount to session
             try:
                 chat_collection.update_one(
@@ -1556,12 +1668,13 @@ Please select between 1 to 5 years only.
                         '$set': {
                             'renewal_years': years,
                             'payment_amount': amount,
-                            'awaiting_payment_receipt': True
+                            'awaiting_payment_receipt': True,
+                            'extendYear': True  # Maintain extendYear flag throughout the process
                         },
                         '$unset': {'awaiting_year_selection': ''}
                     }
                 )
-                logger.info(f"✅ Saved renewal selection: {years} years, RM {amount}")
+                logger.info(f"✅ Saved renewal selection: {years} years, RM {amount}, maintaining extendYear flag")
             except Exception as e:
                 logger.error(f"❌ Failed to save year selection: {str(e)}")
             
@@ -1586,7 +1699,12 @@ Please select between 1 to 5 years only.
 📸 **Next Step:** 
 After making payment to any of the above accounts, take a clear photo of your payment receipt and send it to me for verification.
 
-I'll verify the payment amount matches **RM {amount:.2f}** before proceeding with your license renewal."""
+✅ **What happens next:**
+1. I'll verify the payment amount matches **RM {amount:.2f}**
+2. Upon successful verification, I'll update the government database
+3. Your license validity will be extended for **{years} year{'s' if years > 1 else ''}**
+
+Please upload your payment receipt after completing the transfer."""
             else:
                 # Fallback if API fails
                 payment_message = f"""✅ **License Renewal Selected**
@@ -1601,7 +1719,12 @@ Please make payment of **RM {amount:.2f}** for your license renewal.
 📸 **Next Step:** 
 After making payment, take a clear photo of your payment receipt and send it to me for verification.
 
-I'll verify the payment amount matches RM {amount:.2f} before proceeding with your license renewal."""
+✅ **What happens next:**
+1. I'll verify the payment amount matches **RM {amount:.2f}**
+2. Upon successful verification, I'll update the government database
+3. Your license validity will be extended for **{years} year{'s' if years > 1 else ''}**
+
+Please upload your payment receipt after completing the transfer."""
 
             return {
                 'messageId': message_id,
@@ -1616,6 +1739,198 @@ I'll verify the payment amount matches RM {amount:.2f} before proceeding with yo
             return {
                 'messageId': message_id,
                 'message': 'Sorry, there was an error processing your year selection. Please try again.',
+                'sessionId': session_id,
+                'attachment': [],
+                'createdAt': self.get_iso_timestamp()
+            }
+    
+    def handle_payment_receipt_verification(self, user_id: str, session_id: str, message: str, attachment: list, message_id: str, chat_collection) -> dict:
+        """
+        Handle payment receipt verification during license renewal with extendYear flag
+        """
+        logger.info("💳 Processing payment receipt verification for license renewal")
+        
+        try:
+            # Get session data
+            current_session = chat_collection.find_one({'userId': user_id, 'sessionId': session_id})
+            if not current_session:
+                return {
+                    'messageId': message_id,
+                    'message': 'Session not found. Please start over.',
+                    'sessionId': session_id,
+                    'attachment': [],
+                    'createdAt': self.get_iso_timestamp()
+                }
+            
+            expected_amount = current_session.get('payment_amount', 0)
+            renewal_years = current_session.get('renewal_years', 0)
+            
+            logger.info(f"💰 Expected payment amount: RM {expected_amount}")
+            logger.info(f"📅 Renewal years: {renewal_years}")
+            
+            # Call OCR API to extract receipt data
+            logger.info("📞 Calling OCR API for payment receipt extraction")
+            request_payload = self.prepare_ocr_payload(attachment)
+            
+            response = requests.post(self.textract_service_url, json=request_payload, timeout=30)
+            logger.info(f"📥 OCR API response status: {response.status_code}")
+            
+            if response.status_code != 200:
+                logger.error(f"❌ OCR API failed: {response.status_code}")
+                return {
+                    'messageId': message_id,
+                    'message': 'Sorry, I could not process your receipt. Please ensure the image is clear and try again.',
+                    'sessionId': session_id,
+                    'attachment': [],
+                    'createdAt': self.get_iso_timestamp()
+                }
+            
+            extraction_result = response.json()
+            extracted_data = extraction_result.get('extracted_data', {})
+            
+            logger.info(f"📊 Extracted receipt data: {json.dumps(extracted_data, indent=2)}")
+            
+            # Verify payment amount
+            receipt_amount = None
+            amount_fields = ['amount', 'total_amount', 'payment_amount', 'bill_amount']
+            
+            for field in amount_fields:
+                if field in extracted_data and extracted_data[field]:
+                    try:
+                        # Extract numeric value from amount string
+                        amount_str = str(extracted_data[field]).replace('RM', '').replace(',', '').strip()
+                        receipt_amount = float(amount_str)
+                        logger.info(f"💰 Found receipt amount: RM {receipt_amount} (from field: {field})")
+                        break
+                    except (ValueError, TypeError):
+                        continue
+            
+            if receipt_amount is None:
+                return {
+                    'messageId': message_id,
+                    'message': f"""❌ **Payment Amount Not Found**
+
+I could not detect the payment amount in your receipt. Please ensure the receipt clearly shows:
+• Payment amount of **RM {expected_amount:.2f}**
+• Clear and readable text
+
+Please upload a clearer photo of your payment receipt.""",
+                    'sessionId': session_id,
+                    'attachment': [],
+                    'createdAt': self.get_iso_timestamp()
+                }
+            
+            # Check if amount matches (allow small tolerance)
+            amount_difference = abs(receipt_amount - expected_amount)
+            tolerance = 0.01  # RM 0.01 tolerance
+            
+            if amount_difference > tolerance:
+                return {
+                    'messageId': message_id,
+                    'message': f"""❌ **Payment Amount Mismatch**
+
+**Expected Amount:** RM {expected_amount:.2f}
+**Receipt Amount:** RM {receipt_amount:.2f}
+**Difference:** RM {amount_difference:.2f}
+
+Please upload the correct receipt showing payment of **RM {expected_amount:.2f}** for your {renewal_years}-year license renewal.""",
+                    'sessionId': session_id,
+                    'attachment': [],
+                    'createdAt': self.get_iso_timestamp()
+                }
+            
+            logger.info(f"✅ Payment amount verified: RM {receipt_amount} matches expected RM {expected_amount}")
+            
+            # Call MongoDB MCP API to complete license renewal
+            logger.info("🌐 Calling MongoDB MCP API to complete license renewal")
+            try:
+                session_data = current_session.get('data', {}) or current_session.get('extracted_data', {})
+                ic_number = session_data.get('id_number', session_data.get('ic_number', session_data.get('identity_number', '')))
+                license_number = session_data.get('license_number', session_data.get('license_no', ''))
+                
+                api_url = "https://xlxakmb2sf.execute-api.us-east-1.amazonaws.com/dev/mongodb-mcp"
+                
+                # Complete the license renewal transaction
+                if license_number and ic_number:
+                    instruction = f"Complete license renewal for licence number {license_number} of ic {ic_number} for {renewal_years} years with payment verified RM {receipt_amount:.2f}"
+                elif ic_number:
+                    instruction = f"Complete license renewal for ic {ic_number} for {renewal_years} years with payment verified RM {receipt_amount:.2f}"
+                else:
+                    instruction = f"Complete license renewal for {renewal_years} years with payment verified RM {receipt_amount:.2f}"
+                
+                payload = {
+                    "instruction": instruction
+                }
+                
+                logger.info(f"📤 License completion API request: {json.dumps(payload, indent=2)}")
+                print(f"🌐 License Completion API Request: {json.dumps(payload, indent=2)}")
+                
+                response = requests.post(api_url, json=payload, timeout=30)
+                logger.info(f"📥 License completion API response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    completion_result = response.json()
+                    logger.info(f"✅ License completion API success: {json.dumps(completion_result, indent=2)}")
+                    print(f"✅ License Completion API Response: {json.dumps(completion_result, indent=2)}")
+                else:
+                    logger.error(f"❌ License completion API error: {response.status_code} - {response.text}")
+                    print(f"❌ License Completion API Error: {response.status_code} - {response.text}")
+                    
+            except Exception as e:
+                logger.error(f"❌ Error calling license completion API: {str(e)}")
+                print(f"❌ License Completion API Error: {str(e)}")
+            
+            # Clear all license renewal flags - process completed
+            try:
+                chat_collection.update_one(
+                    {'userId': user_id, 'sessionId': session_id},
+                    {
+                        '$unset': {
+                            'extendYear': '',
+                            'awaiting_year_selection': '',
+                            'awaiting_payment_receipt': '',
+                            'renewal_years': '',
+                            'payment_amount': ''
+                        },
+                        '$set': {
+                            'license_renewal_completed': True,
+                            'completion_timestamp': self.get_iso_timestamp()
+                        }
+                    }
+                )
+                logger.info("✅ Cleared all license renewal flags - process completed")
+            except Exception as e:
+                logger.error(f"❌ Failed to clear license renewal flags: {str(e)}")
+            
+            return {
+                'messageId': message_id,
+                'message': f"""🎉 **License Renewal Completed Successfully!**
+
+✅ **Payment Verified:** RM {receipt_amount:.2f}
+📅 **Extension Period:** {renewal_years} year{'s' if renewal_years > 1 else ''}
+🏛️ **Status:** License renewal has been processed with the government database
+
+**Your driving license validity has been successfully extended!**
+
+Thank you for using our government services. Is there anything else I can help you with today?
+
+🏛️ **Available Services:**
+• License Services
+• TNB Bill Payment
+• Account Inquiries
+• Vehicle Registration
+
+How else can I assist you? 🤝""",
+                'sessionId': session_id,
+                'attachment': [],
+                'createdAt': self.get_iso_timestamp()
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Error in payment receipt verification: {str(e)}")
+            return {
+                'messageId': message_id,
+                'message': 'Sorry, there was an error processing your payment receipt. Please try again.',
                 'sessionId': session_id,
                 'attachment': [],
                 'createdAt': self.get_iso_timestamp()
@@ -1749,6 +2064,22 @@ Please ensure the photo is clear and all text is readable for accurate processin
         logger.info(f"🔗 Session ID: {session_id}")
         logger.info(f"💬 Message: {message}")
         logger.info(f"📎 Attachment: {attachment}")
+        
+        # PRIORITY CHECK: Handle payment receipt during license renewal (extendYear present)
+        try:
+            collection_name = user_id
+            chat_collection = self.db[collection_name]
+            current_session = chat_collection.find_one({'userId': user_id, 'sessionId': session_id})
+            
+            if current_session:
+                extend_year = current_session.get('extendYear', False)
+                awaiting_payment = current_session.get('awaiting_payment_receipt', False)
+                
+                if extend_year and awaiting_payment:
+                    logger.info("💳 PRIORITY: Processing payment receipt during license renewal")
+                    return self.handle_payment_receipt_verification(user_id, session_id, message, attachment, message_id, chat_collection)
+        except Exception as e:
+            logger.error(f"❌ Error checking extendYear priority: {str(e)}")
         
         try:
             # Step 1: Call OCR document extraction service
@@ -2820,13 +3151,14 @@ Is this information correct? Please reply "Yes" to confirm or "No" if any detail
                                                 'data': extracted_data,
                                                 'isValidate': True,
                                                 'awaiting_year_selection': True,
+                                                'extendYear': True,  # NEW: Track license renewal progress
                                                 'license_confirmed': True,
                                                 'context_restored_from': session_with_data_id,
                                                 'context_restoration_timestamp': self.get_iso_timestamp()
                                             }
                                         }
                                     )
-                                    logger.info("✅ Current session updated with license renewal context")
+                                    logger.info("✅ Current session updated with license renewal context and extendYear flag")
                                 except Exception as e:
                                     logger.error(f"❌ Failed to update current session with context: {str(e)}")
                                 
@@ -2860,6 +3192,29 @@ Please reply with the number of years you want to extend (e.g., "2 years" or jus
                                 }
                             else:
                                 logger.error("❌ Failed to get beneficiary accounts")
+                                
+                                # Update current session with license renewal context (even without accounts)
+                                try:
+                                    chat_collection.update_one(
+                                        {'userId': user_id, 'sessionId': session_id},
+                                        {
+                                            '$set': {
+                                                'topic': 'renew license',
+                                                'document_category': document_category,
+                                                'data': extracted_data,
+                                                'isValidate': True,
+                                                'awaiting_year_selection': True,
+                                                'extendYear': True,  # CRITICAL: Track license renewal progress
+                                                'license_confirmed': True,
+                                                'context_restored_from': session_with_data_id,
+                                                'context_restoration_timestamp': self.get_iso_timestamp()
+                                            }
+                                        }
+                                    )
+                                    logger.info("✅ Current session updated with license renewal context and extendYear flag (fallback)")
+                                except Exception as e:
+                                    logger.error(f"❌ Failed to update current session with context: {str(e)}")
+                                
                                 message = f"""✅ **License Renewal Context Found!**
 
 👤 **Name:** {full_name}
