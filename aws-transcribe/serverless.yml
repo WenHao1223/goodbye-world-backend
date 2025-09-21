@@ -62,6 +62,23 @@ functions:
               - Content-Type
             allowCredentials: false
 
+  processUrl:
+    handler: lambda_handler.process_url_handler
+    events:
+      - http:
+          path: process-url
+          method: post
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
+
 # Remove resources section since we're using existing bucket
 # resources:
 #   Resources:

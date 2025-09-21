@@ -1,6 +1,30 @@
 # AWS Transcribe API
 
-A serverless AWS Lambda function that provides multi-language audio/video transcription services using AWS Transcribe. This service supports English, Chinese, Malay, and Indonesian languages and accepts S3 downloadable URLs as input.
+A serverless AWS Lambda function that provides multi-language audio/video transcription services using AWS Transcribe. This service supports English, Chinese, Malay, and Indonesian languages and accepts S3 dow**Manual Testing with curl**
+
+**1. Health Check:**
+```bash
+curl "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/health"
+```
+
+**2. Quick Transcribe (Process URL):**
+```bash
+curl -X POST "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/process-url" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"https://great-ai-hackathon-uploads-dev.s3.us-east-1.amazonaws.com/sample-audio.m4a\"}"
+```
+
+**3. Start Transcription Job:**
+```bash
+curl -X POST "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/transcribe" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"https://your-bucket.s3.amazonaws.com/audio.mp3\", \"language\": \"en-us\"}"
+```
+
+**4. Check Job Status:**
+```bash
+curl "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/status?job_name=transcribe_job_20231201_123456_abc123"
+```s input.
 
 ## 🎤 Features
 
@@ -24,7 +48,12 @@ curl "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/health"
 # Start transcription (replace with your S3 URL)
 curl -X POST "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/transcribe" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://your-s3-bucket.amazonaws.com/audio-file.mp3", "language": "en-us"}'
+  -d "{\"url\": \"https://your-s3-bucket.amazonaws.com/audio-file.mp3\", \"language\": \"en-us\"}"
+
+# Process URL (transcribe immediately and get transcript)
+curl -X POST "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/process-url" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"https://your-s3-bucket.amazonaws.com/audio-file.mp3\"}"
 
 # Check status (replace JOB_NAME with actual job name from transcribe response)
 curl "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/status?job_name=JOB_NAME"
@@ -107,6 +136,51 @@ Check if the service is running and get supported languages.
   }
 }
 ```
+
+### 4. Process URL (Quick Transcribe)
+**POST** `/process-url`
+
+Process an S3 URL and return the completed transcript immediately. This endpoint starts a transcription job and waits for completion before returning the result.
+
+**Request Body:**
+```json
+{
+  "url": "https://your-bucket.s3.amazonaws.com/audio-file.mp3"
+}
+```
+
+**Response Format:**
+```json
+{
+  "status": {
+    "statusCode": 200,
+    "message": "Transcription completed successfully"
+  },
+  "data": {
+    "message": "Well, mu xiang Xinjiang one or jia hay to the chat like update or the license or for the TMB the viewliha Maiajingua some baobaya."
+  }
+}
+```
+
+**Usage Examples:**
+```bash
+# Using the sample audio file
+curl -X POST "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/process-url" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"https://great-ai-hackathon-uploads-dev.s3.us-east-1.amazonaws.com/sample-audio.m4a\"}"
+
+# Using your own S3 URL
+curl -X POST "https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev/process-url" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"https://your-bucket.s3.amazonaws.com/audio-file.mp3\"}"
+```
+
+**Features:**
+- ✅ **Synchronous**: Returns completed transcript immediately
+- ✅ **Default Language**: Uses English (en-us) automatically  
+- ✅ **No Job Tracking**: No need to check status separately
+- ✅ **Quick Response**: Best for shorter audio files
+- ⚠️ **Timeout**: May timeout for very long audio files (use `/transcribe` endpoint instead)
 
 ## 🚀 Supported Languages
 

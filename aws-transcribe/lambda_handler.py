@@ -37,6 +37,8 @@ def lambda_handler(event, context):
         return status_handler(event, context)
     elif path == '/health' and method == 'GET':
         return health_handler(event, context)
+    elif path == '/process-url' and method == 'POST':
+        return process_url_handler(event, context)
     else:
         return create_response(
             404, 
@@ -186,6 +188,148 @@ def start_transcription_job(media_url: str, language_code: str) -> Dict[str, Any
             'success': False,
             'error': f"Unexpected error: {str(e)}"
         }
+
+def process_url_handler(event, context):
+    """
+    Handle S3 URL processing requests - Start transcription and wait for completion
+    Expected request format:
+    {
+        "url": "https://s3-bucket-url/file.ext"
+    }
+    
+    Returns:
+    {
+        "status": {
+            "statusCode": "200",
+            "message": "URL processed successfully"
+        },
+        "data": {
+            "message": "transcript text from audio"
+        }
+    }
+    """
+    try:
+        # Handle OPTIONS requests for CORS
+        if event.get('httpMethod') == 'OPTIONS':
+            return handle_options()
+        
+        # Parse request body
+        try:
+            if 'body' in event:
+                if isinstance(event['body'], str):
+                    body = json.loads(event['body'])
+                else:
+                    body = event['body']
+            else:
+                body = event
+        except json.JSONDecodeError:
+            return create_simple_response(
+                400,
+                "Invalid JSON format",
+                "Request body must be valid JSON"
+            )
+        
+        # Validate required fields
+        url = body.get('url')
+        if not url:
+            return create_simple_response(
+                400,
+                "Missing required field",
+                "The 'url' field is required"
+            )
+        
+        # Validate URL format
+        if not is_valid_s3_url(url):
+            return create_simple_response(
+                400,
+                "Invalid URL format",
+                "The provided URL is not a valid S3 downloadable URL"
+            )
+        
+        # Start transcription with default language (en-us)
+        language = "en-us"
+        transcription_result = start_transcription_job(url, language)
+        
+        if not transcription_result['success']:
+            return create_simple_response(
+                500,
+                "Transcription failed",
+                transcription_result.get('error', 'Unknown transcription error')
+            )
+        
+        job_name = transcription_result['data']['job_name']
+        
+        # Wait for transcription to complete (with timeout)
+        import time
+        max_wait = 300  # 5 minutes timeout
+        check_interval = 10  # Check every 10 seconds
+        elapsed = 0
+        
+        while elapsed < max_wait:
+            # Check job status
+            status_result = get_transcription_job_status(job_name)
+            
+            if status_result['success']:
+                job_status = status_result['data']['status']
+                
+                if job_status == 'COMPLETED':
+                    # Get the transcript text
+                    transcript = status_result['data'].get('transcript', '')
+                    
+                    # If transcript retrieval failed, try to get it directly from S3
+                    if transcript.startswith('Error') or not transcript or transcript == '':
+                        # Try to get transcript from S3 URI
+                        transcript_uri = status_result['data'].get('transcript_uri', '')
+                        if transcript_uri:
+                            transcript = fetch_transcript_from_s3(transcript_uri)
+                            if not transcript:
+                                transcript = "Transcription completed but text retrieval failed"
+                        else:
+                            transcript = "Transcription completed but no transcript URI found"
+                    
+                    return create_simple_response(
+                        200,
+                        "Transcription completed successfully",
+                        transcript
+                    )
+                elif job_status == 'FAILED':
+                    failure_reason = status_result['data'].get('failure_reason', 'Unknown reason')
+                    return create_simple_response(
+                        500,
+                        "Transcription failed",
+                        f"Transcription job failed: {failure_reason}"
+                    )
+                elif job_status == 'IN_PROGRESS':
+                    # Continue waiting
+                    time.sleep(check_interval)
+                    elapsed += check_interval
+                else:
+                    return create_simple_response(
+                        500,
+                        "Unknown job status",
+                        f"Unexpected job status: {job_status}"
+                    )
+            else:
+                return create_simple_response(
+                    500,
+                    "Status check failed",
+                    status_result.get('error', 'Failed to check transcription status')
+                )
+        
+        # Timeout reached
+        return create_simple_response(
+            408,
+            "Transcription timeout",
+            f"Transcription did not complete within {max_wait} seconds. Job name: {job_name}"
+        )
+            
+    except Exception as e:
+        import traceback
+        return create_simple_response(
+            500,
+            "Internal server error",
+            f"An unexpected error occurred: {str(e)}"
+        )
 
 def status_handler(event, context):
     """
@@ -356,6 +500,127 @@ def get_cors_headers():
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent',
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+    }
+
+def convert_to_s3_uri(https_url: str) -> str:
+    """
+    Convert HTTPS S3 URL to s3:// URI format
+    Example: https://bucket.s3.region.amazonaws.com/key -> s3://bucket/key
+    """
+    try:
+        parsed = urlparse(https_url)
+        
+        # Handle different S3 URL formats
+        if '.s3.' in parsed.netloc:
+            # Format: https://bucket.s3.region.amazonaws.com/key
+            bucket = parsed.netloc.split('.s3.')[0]
+            key = parsed.path.lstrip('/')
+        elif 's3.' in parsed.netloc and parsed.netloc.startswith('s3.'):
+            # Format: https://s3.region.amazonaws.com/bucket/key
+            path_parts = parsed.path.lstrip('/').split('/', 1)
+            bucket = path_parts[0]
+            key = path_parts[1] if len(path_parts) > 1 else ''
+        else:
+            # Fallback - try to extract bucket and key
+            path_parts = parsed.path.lstrip('/').split('/', 1)
+            bucket = path_parts[0] if path_parts else ''
+            key = path_parts[1] if len(path_parts) > 1 else ''
+        
+        return f"s3://{bucket}/{key}"
+        
+    except Exception as e:
+        # If conversion fails, return original URL
+        return https_url
+
+def validate_s3_url_access(url: str) -> Dict[str, Any]:
+    """
+    Validate that the S3 URL is accessible and get file info
+    """
+    try:
+        # Try to make a HEAD request to check accessibility
+        response = requests.head(url, timeout=10)
+        
+        if response.status_code == 200:
+            file_size = response.headers.get('Content-Length', 'unknown')
+            content_type = response.headers.get('Content-Type', 'unknown')
+            
+            return {
+                'accessible': True,
+                'size': f"{file_size} bytes" if file_size != 'unknown' else 'unknown',
+                'content_type': content_type
+            }
+        else:
+            return {
+                'accessible': False,
+                'error': f"HTTP {response.status_code}: {response.reason}"
+            }
+            
+    except requests.exceptions.RequestException as e:
+        return {
+            'accessible': False,
+            'error': f"Request failed: {str(e)}"
+        }
+    except Exception as e:
+        return {
+            'accessible': False,
+            'error': f"Validation error: {str(e)}"
+        }
+
+def fetch_transcript_from_s3(transcript_uri: str) -> str:
+    """
+    Fetch transcript text directly from S3 using boto3
+    """
+    try:
+        import boto3
+        import json
+        
+        # Parse S3 URI to get bucket and key
+        if 's3.us-east-1.amazonaws.com/' in transcript_uri:
+            # Format: https://s3.us-east-1.amazonaws.com/bucket-name/file-key
+            parts = transcript_uri.replace('https://s3.us-east-1.amazonaws.com/', '').split('/', 1)
+            bucket_name = parts[0]
+            object_key = parts[1] if len(parts) > 1 else ''
+        else:
+            print(f"Unexpected S3 URI format: {transcript_uri}")
+            return ""
+        
+        # Create S3 client
+        s3_client = boto3.client('s3', region_name='us-east-1')
+        
+        # Get object from S3
+        response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        transcript_data = json.loads(response['Body'].read().decode('utf-8'))
+        
+        # Extract transcript text
+        if 'results' in transcript_data and 'transcripts' in transcript_data['results']:
+            transcripts = transcript_data['results']['transcripts']
+            if transcripts and len(transcripts) > 0:
+                return transcripts[0].get('transcript', '')
+        
+        return ""
+        
+    except Exception as e:
+        print(f"Error fetching transcript from S3: {str(e)}")
+        return ""
+
+def create_simple_response(status_code: int, message: str, data_message: str) -> Dict[str, Any]:
+    """
+    Create simple response format as requested by user
+    """
+    response_body = {
+        'status': {
+            'statusCode': str(status_code),
+            'message': message
+        },
+        'data': {
+            'message': data_message
+        }
+    }
+    
+    return {
+        'statusCode': status_code,
+        'headers': get_cors_headers(),
+        'body': json.dumps(response_body, indent=2)
     }
 
 def create_response(status_code: int, message: str, data: Any) -> Dict[str, Any]:

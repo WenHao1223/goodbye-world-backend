@@ -19,6 +19,7 @@ load_dotenv()
 TRANSCRIBE_API_URL = os.getenv('TRANSCRIBE_API_URL')
 TRANSCRIBE_HEALTH_API_URL = os.getenv('TRANSCRIBE_HEALTH_API_URL')
 TRANSCRIBE_STATUS_API_URL = os.getenv('TRANSCRIBE_STATUS_API_URL')
+PROCESS_URL_API_URL = os.getenv('PROCESS_URL_API_URL')
 
 def ensure_output_folder():
     """Create output folder if it doesn't exist"""
