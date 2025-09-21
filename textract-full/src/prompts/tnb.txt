@@ -1,7 +1,8 @@
 Extract the following information from this TNB Bill text and return as JSON:
 
 {
-  "account_number": "Exact value of No. Akaun as printed on the bill"
+  "account_number": "Exact value of No. Akaun as printed on the bill",
+  "invoice_number": "Exact value of No. Invois" as printed on the bill",
 }
 
 Rules:
