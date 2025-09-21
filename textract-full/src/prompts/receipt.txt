@@ -1,19 +1,18 @@
 Extract the following information from this Payment Receipt text and return as JSON:
 
 {
-  "transaction_amount": "Transaction amount as displayed",
-  "transaction_type": "Transaction type as printed",
-  "merchant": "Merchant name as printed",
-  "payment_method": "Payment method as printed",
-  "date_time": "Date and time of transaction",
-  "wallet_reference": "Wallet reference number as printed",
-  "transaction_status": "Transaction status as printed",
-  "transaction_number": "Transaction number as printed"
+  "beneficiary_name": "Beneficiary name as printed (e.g. Jabatan Pengangkutan Jalan Malaysia)",
+  "beneficiary_account_number": "Beneficiary account number as printed",
+  "receiving_bank": "Receiving bank as printed",
+  "recipient_reference": "Recipient reference as printed",
+  "reference_id": "Reference ID as printed",
+  "payment_details": "Payment details / description as printed",
+  "amount": "Transaction amount as displayed (always positive, with currency symbol if printed)",
+  "successful_timestamp": "Date and time of transaction as printed"
 }
 
 Rules:
 - Return only valid JSON.
 - Use the exact text as printed, don’t interpret.
 - If any field is missing, return null instead of skipping.
-- Concatenate multi-line values (e.g., Wallet Ref).
-- For "transaction_amount", always return a positive value.
+- Concatenate multi-line values if needed.

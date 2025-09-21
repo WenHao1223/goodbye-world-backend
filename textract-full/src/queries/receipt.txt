@@ -1,8 +1,8 @@
+Who is the beneficiary?
+What is the beneficiary account number?
+Which bank is receiving the payment?
+What is the recipient reference?
+What is the reference ID?
+What are the payment details / description?
 What is the transaction amount?
-What is the transaction type?
-Who is the merchant?
-What is the payment method?
-What is the date and time of the transaction?
-What is the wallet reference number?
-What is the transaction status?
-What is the transaction number?
+When was the transaction successfully completed?
