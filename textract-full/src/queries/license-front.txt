@@ -5,4 +5,3 @@ what is the nationality?
 What is the license class?
 What is the license validity period?
 What is the address?
-What is the license number?

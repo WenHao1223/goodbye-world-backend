@@ -16,4 +16,4 @@ Rules:
 - Use the exact text as printed, don’t interpret.
 - If any field is missing, return null instead of skipping.
 - Concatenate multi-line values (e.g., Wallet Ref).
-- For "transaction_amount", always return a positive value
+- For "transaction_amount", always return a positive value.

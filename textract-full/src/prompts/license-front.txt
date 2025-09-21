@@ -1,0 +1,28 @@
+Extract the following information from this Driving License text and return as JSON:
+
+{
+  "full_name": string|null,
+  "identity_number": string|null,
+  "date_of_birth": "YYYY-MM-DD"|null,
+  "nationality": string|null,
+  "license_class": string|null,
+  "validity_period": {
+    "valid_from": "YYYY-MM-DD"|null,
+    "valid_to": "YYYY-MM-DD"|null
+  },
+  "address": string|null,
+}
+
+Rules:
+- Use null for missing information
+- Extract exact text, don’t interpret, don’t translate
+- Convert dates from DD/MM/YYYY to YYYY-MM-DD format
+- license_class:
+  * ONLY look at the field explicitly labeled "Kelas / Class", Not "Classes"
+  * Compare the extracted text against this whitelist: ["A","A1","B","B1","B2","C","D","DA"]
+  * Only return the text exactly as printed on the license if it matches one single valid class
+  * If more than one class is printed OR no valid match is found, return null
+  * DO NOT return the entire whitelist
+  * If no valid match is found, return null
+- validity_period: strictly from "Tempoh / Validity" field, split into valid_from and valid_to
+- Return only valid JSON, no explanation
