@@ -202,6 +202,7 @@ class IntentClassifier:
             
             if attachment and len(attachment) > 0:
                 # Intent: detect_file (direct document processing)
+                # Intent: detect_file (direct document processing)
                 intent_type = "detect_file"
                 logger.info("🔍 INTENT DETECTED: detect_file (attachment provided)")
                 print("🔍 INTENT DETECTED: detect_file (attachment provided)")  # CloudWatch visibility
@@ -394,6 +395,7 @@ class IntentClassifier:
     def handle_detect_file(self, user_id: str, session_id: str, message: str, attachment: list, message_id: str) -> dict:
         """
         Handle file detection using textract service with blur detection and data confirmation
+        Handle file detection using textract service with blur detection and data confirmation
         """
         logger.info("🔍 Processing DETECT_FILE intent")
         logger.info(f"👤 User ID: {user_id}")
@@ -444,6 +446,7 @@ class IntentClassifier:
                 detected_category = extraction_result.get('category_detection', {}).get('detected_category', 'unknown')
                 extracted_data = extraction_result.get('extracted_data', {})
                 
+                
                 logger.info(f"🏷️ Detected category: {detected_category}")
                 logger.info(f"📊 Extracted data: {json.dumps(extracted_data, indent=2)}")
                 
@@ -451,6 +454,7 @@ class IntentClassifier:
                 collection_name = user_id
                 chat_collection = self.db[collection_name]
                 logger.info(f"💾 Storing extraction result to MongoDB collection '{collection_name}'")
+                
                 
                 try:
                     update_result = chat_collection.update_one(
@@ -466,7 +470,18 @@ class IntentClassifier:
                                     'detected_category': detected_category,
                                     'extraction_result': extraction_result,
                                     'extracted_data': extracted_data
+                                    'extraction_result': extraction_result,
+                                    'extracted_data': extracted_data
                                 }
+                            },
+                            '$set': {
+                                'extracted_data': extracted_data,  # Store at session level too
+                                'document_category': detected_category
+                            },
+                            '$unset': {
+                                'awaiting_document_upload': '',  # Clear awaiting state since document is uploaded
+                                'document_prompt_sent': ''
+                            }
                             },
                             '$set': {
                                 'extracted_data': extracted_data,  # Store at session level too
@@ -479,6 +494,7 @@ class IntentClassifier:
                         }
                     )
                     logger.info(f"✅ Stored to collection '{collection_name}' and cleared awaiting document state. Modified count: {update_result.modified_count}")
+                    logger.info(f"✅ Stored to collection '{collection_name}' and cleared awaiting document state. Modified count: {update_result.modified_count}")
                 except Exception as e:
                     logger.error(f"❌ Failed to store to collection '{collection_name}': {str(e)}")
                 
@@ -490,9 +506,13 @@ class IntentClassifier:
                 # Generate confirmation message with extracted key data
                 confirmation_message = self.generate_data_confirmation_message(detected_category, extracted_data)
                 logger.info(f"💬 Generated confirmation message: {confirmation_message}")
+                # Generate confirmation message with extracted key data
+                confirmation_message = self.generate_data_confirmation_message(detected_category, extracted_data)
+                logger.info(f"💬 Generated confirmation message: {confirmation_message}")
                 
                 response_data = {
                     'messageId': message_id,
+                    'message': confirmation_message,
                     'message': confirmation_message,
                     'sessionId': session_id,
                     'attachment': [{
@@ -758,9 +778,26 @@ How can I assist you today? 🤝""",
                 logger.info(f"🏷️ Topic detected: {topic}")
                 
                 # Check current session document
+                # Check current session document
                 current_session = chat_collection.find_one({'userId': user_id, 'sessionId': session_id})
                 
                 if current_session:
+                    # Check if session has topic field at document level
+                    session_has_topic = 'topic' in current_session
+                    current_session_topic = current_session.get('topic', None)
+                    
+                    logger.info(f"📋 Current session has topic field: {session_has_topic}")
+                    logger.info(f"📋 Current session topic: {current_session_topic}")
+                    
+                    # Only create new session if:
+                    # 1. Session has topic field AND 
+                    # 2. New topic is different from current topic
+                    if session_has_topic and current_session_topic != topic:
+                        # Create new session for different topic
+                        new_session_id = str(uuid.uuid4())
+                        logger.info(f"🆔 Creating new session for different topic '{current_session_topic}' → '{topic}': {new_session_id}")
+                        
+                        # Close current session
                     # Check if session has topic field at document level
                     session_has_topic = 'topic' in current_session
                     current_session_topic = current_session.get('topic', None)
@@ -2891,6 +2928,7 @@ Available intents and their descriptions:
 - renew_license: User wants to renew their driving license
 - pay_tnb_bill: User wants to pay TNB electricity bill
 - document_upload: User is uploading or sharing a document for processing
+- document_upload: User is uploading or sharing a document for processing
 - license_inquiry: Questions about driving license, license application, license status
 - tnb_inquiry: Questions about TNB bills, electricity bills, TNB account, power bills
 - jpj_inquiry: Questions about JPJ services, vehicle registration, road tax
@@ -2967,6 +3005,11 @@ Return JSON format:
             'identity_no', 'license_number', 'account_number', 'tnb_account_number',
             'license_no', 'account_no', 'full_name'
         ]
+        # Updated identity fields to match new API response
+        identity_fields = [
+            'identity_no', 'license_number', 'account_number', 'tnb_account_number',
+            'license_no', 'account_no', 'full_name'
+        ]
         
         user_identities = {}
         for field in identity_fields:
@@ -2995,6 +3038,74 @@ Return JSON format:
                 logger.error(f"❌ Failed to store user identities: {str(e)}")
         else:
             logger.info("ℹ️ No unique identities found in extracted data")
+    
+    def generate_data_confirmation_message(self, category: str, extracted_data: dict) -> str:
+        """
+        Generate confirmation message with extracted key data for user verification
+        """
+        logger.info(f"📝 Generating confirmation message for category: {category}")
+        
+        if category == 'license':
+            # Extract key license information
+            full_name = extracted_data.get('full_name', 'Not found')
+            identity_no = extracted_data.get('identity_no', 'Not found')
+            license_number = extracted_data.get('license_number', 'Not found')
+            
+            confirmation_msg = f"""I've successfully processed your driving license. Please confirm the following details:
+
+📋 **Extracted Information:**
+• Full Name: {full_name}
+• Identity Number: {identity_no}
+• License Number: {license_number}
+
+Is this information correct? Please reply "Yes" to confirm or "No" if any details need correction."""
+            
+            logger.info(f"📄 License confirmation generated for: {full_name}")
+            return confirmation_msg
+            
+        elif category == 'tnb_bill':
+            # Extract key TNB bill information
+            account_number = extracted_data.get('account_number', extracted_data.get('tnb_account_number', 'Not found'))
+            customer_name = extracted_data.get('customer_name', extracted_data.get('full_name', 'Not found'))
+            bill_amount = extracted_data.get('bill_amount', extracted_data.get('amount_due', 'Not found'))
+            
+            confirmation_msg = f"""I've successfully processed your TNB bill. Please confirm the following details:
+
+📋 **Extracted Information:**
+• Customer Name: {customer_name}
+• TNB Account Number: {account_number}
+• Bill Amount: {bill_amount}
+
+Is this information correct? Please reply "Yes" to confirm or "No" if any details need correction."""
+            
+            logger.info(f"💡 TNB bill confirmation generated for account: {account_number}")
+            return confirmation_msg
+            
+        else:
+            # Generic confirmation for other document types
+            key_fields = []
+            
+            # Look for common identity fields
+            if 'full_name' in extracted_data:
+                key_fields.append(f"• Full Name: {extracted_data['full_name']}")
+            if 'identity_no' in extracted_data:
+                key_fields.append(f"• Identity Number: {extracted_data['identity_no']}")
+            if 'account_number' in extracted_data:
+                key_fields.append(f"• Account Number: {extracted_data['account_number']}")
+            
+            if key_fields:
+                confirmation_msg = f"""I've successfully processed your document. Please confirm the following details:
+
+📋 **Extracted Information:**
+{chr(10).join(key_fields)}
+
+Is this information correct? Please reply "Yes" to confirm or "No" if any details need correction."""
+            else:
+                confirmation_msg = f"I've processed your document (category: {category}). The document has been analyzed and stored. How can I assist you further?"
+            
+            logger.info(f"📄 Generic confirmation generated for category: {category}")
+            return confirmation_msg
+
     
     def generate_data_confirmation_message(self, category: str, extracted_data: dict) -> str:
         """
@@ -3450,6 +3561,7 @@ How can I help you today?"""
         responses = {
             'renew_license': "I can help you renew your driving license. To proceed with the renewal and verify your identity, please upload a photo of your IC (Identity Card) or current driving license. This will help me validate your details and assist you better.",
             'pay_tnb_bill': "I can assist you with paying your TNB electricity bill. To proceed with the payment and verify your account, please take a photo of the upper part of your TNB bill (showing your account details and amount due). This will help me process your payment accurately.",
+            'document_upload': "I'm ready to process your document! Please upload a clear photo of your document and I'll extract the information for you.",
             'document_upload': "I'm ready to process your document! Please upload a clear photo of your document and I'll extract the information for you.",
             'license_inquiry': "I can help you with driving license services. Would you like to check license status, apply for renewal, or get information about license requirements?",
             'tnb_inquiry': "I can assist you with TNB electricity bill services. Would you like to check your bill status, view payment history, or process a payment?",
