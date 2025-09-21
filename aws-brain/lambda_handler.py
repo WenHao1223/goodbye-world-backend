@@ -72,8 +72,9 @@ def lambda_handler(event, context):
         logger.info(f"💬 Extracted message: {message}")
         logger.info(f"📎 Extracted attachment: {attachment}")
         
-        if not user_id or not session_id or not message:
-            logger.warning("❌ Missing required parameters")
+        # Validate required parameters - message can be empty if attachment is provided
+        if not user_id or not session_id:
+            logger.warning("❌ Missing required parameters: userId and sessionId are required")
             error_response = {
                 'statusCode': 400,
                 'headers': {
@@ -89,7 +90,35 @@ def lambda_handler(event, context):
                     },
                     'data': {
                         'messageId': '',
-                        'message': 'Please provide userId, sessionId, and message in the request body',
+                        'message': 'Please provide userId and sessionId in the request body',
+                        'sessionId': session_id,
+                        'attachment': [],
+                        'createdAt': created_at or get_iso_timestamp()
+                    }
+                })
+            }
+            logger.info(f"📤 Returning error response: {json.dumps(error_response, indent=2)}")
+            return error_response
+        
+        # Check if either message or attachment is provided
+        if not message and (not attachment or len(attachment) == 0):
+            logger.warning("❌ Missing content: either message or attachment must be provided")
+            error_response = {
+                'statusCode': 400,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': 'Content-Type',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+                },
+                'body': json.dumps({
+                    'status': {
+                        'statusCode': '400',
+                        'message': 'Missing content'
+                    },
+                    'data': {
+                        'messageId': '',
+                        'message': 'Please provide either a message or an attachment in the request body',
                         'sessionId': session_id,
                         'attachment': [],
                         'createdAt': created_at or get_iso_timestamp()
