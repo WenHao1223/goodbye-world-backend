@@ -19,6 +19,14 @@
   "beneficiary_account": "107228131548",
   "beneficiary_bank": "Maybank",
   "service": "JPJ",
-  "qr_link": "",
+  "qr_link": "https://great-ai-hackathon-uploads-dev.s3.us-east-1.amazonaws.com/maybank-107228131548.jpg",
+  "active": true
+}
+{
+  "beneficiary_name": "Tan Jun Cheng",
+  "beneficiary_account": "60167022767",
+  "beneficiary_bank": "TnG",
+  "service": "JPJ",
+  "qr_link": "https://great-ai-hackathon-uploads-dev.s3.us-east-1.amazonaws.com/tng-60167022767.jpg",
   "active": true
 }
