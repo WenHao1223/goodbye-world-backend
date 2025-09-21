@@ -290,23 +290,30 @@ def create_html_test_interface():
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
         
         .container {
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
         }
         
         h1 {
             color: #333;
             text-align: center;
             margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .form-group {
@@ -315,77 +322,92 @@ def create_html_test_interface():
         
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 600;
             color: #555;
+            font-size: 14px;
         }
         
         input, select, textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 14px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
             font-size: 14px;
             box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
         button {
-            background-color: #007bff;
+            background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             padding: 12px 24px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: 600;
             margin-right: 10px;
             margin-bottom: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         
         button:hover {
-            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
         
         button:disabled {
-            background-color: #6c757d;
+            background: #6c757d;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         
         .response {
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             white-space: pre-wrap;
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.5;
         }
         
         .response.success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border: 2px solid #28a745;
             color: #155724;
         }
         
         .response.error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            border: 2px solid #dc3545;
             color: #721c24;
         }
         
         .loading {
             display: none;
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
         }
         
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            margin: 0 auto 15px;
         }
         
         @keyframes spin {
@@ -394,39 +416,132 @@ def create_html_test_interface():
         }
         
         .endpoint-section {
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
             margin-bottom: 30px;
-            padding: 20px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .endpoint-section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
         
         .endpoint-title {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
             margin-bottom: 15px;
             color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .info-box {
-            background-color: #e7f3ff;
+            background: linear-gradient(135deg, #e7f3ff, #cce7ff);
             border-left: 4px solid #007bff;
-            padding: 10px 15px;
-            margin-bottom: 20px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,123,255,0.1);
         }
         
         .supported-languages {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
         }
         
         .language-item {
-            background-color: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            padding: 12px 16px;
+            border-radius: 8px;
             text-align: center;
             font-size: 14px;
+            font-weight: 500;
+            border: 2px solid #e9ecef;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        
+        .language-item:hover {
+            transform: translateY(-2px);
+            border-color: #667eea;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-pending { background-color: #ffc107; }
+        
+        .quick-actions {
+            background: linear-gradient(135deg, #f1f3f4, #e8eaed);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .quick-actions h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .quick-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-btn {
+            background: #6c757d;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .quick-btn:hover {
+            background: #5a6268;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .quick-buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -435,7 +550,7 @@ def create_html_test_interface():
         <h1>🎤 AWS Transcribe API Test Interface</h1>
         
         <div class="info-box">
-            <strong>Supported Languages:</strong>
+            <strong>🌍 Supported Languages:</strong>
             <div class="supported-languages">
                 <div class="language-item">🇺🇸 English (en-us)</div>
                 <div class="language-item">🇨🇳 Chinese (zh-cn)</div>
@@ -444,66 +559,104 @@ def create_html_test_interface():
             </div>
         </div>
 
+        <div class="quick-actions">
+            <h3>🚀 Quick Actions</h3>
+            <div class="quick-buttons">
+                <button class="quick-btn" onclick="populateTestData()">📝 Load Test Data</button>
+                <button class="quick-btn" onclick="clearAll()">🗑️ Clear All</button>
+                <button class="quick-btn" onclick="exportResults()">💾 Export Results</button>
+                <button class="quick-btn" onclick="autoMonitor()">🔄 Auto Monitor</button>
+            </div>
+        </div>
+
         <!-- Health Check Section -->
         <div class="endpoint-section">
-            <div class="endpoint-title">Health Check</div>
-            <button onclick="testHealth()">Test Health Endpoint</button>
+            <div class="endpoint-title">
+                🏥 Health Check
+                <span class="status-indicator status-pending" id="health-status"></span>
+            </div>
+            <button onclick="testHealth()">🔍 Test Health Endpoint</button>
         </div>
 
         <!-- Transcribe Section -->
         <div class="endpoint-section">
-            <div class="endpoint-title">Start Transcription</div>
+            <div class="endpoint-title">
+                🎵 Start Transcription
+                <span class="status-indicator status-pending" id="transcribe-status"></span>
+            </div>
             
             <div class="form-group">
-                <label for="s3Url">S3 Download URL:</label>
+                <label for="s3Url">📁 S3 Download URL:</label>
                 <input type="url" id="s3Url" placeholder="https://your-bucket.s3.amazonaws.com/audio-file.mp3" required>
             </div>
             
             <div class="form-group">
-                <label for="language">Language:</label>
+                <label for="language">🌐 Language:</label>
                 <select id="language">
-                    <option value="en-us">English (en-us)</option>
-                    <option value="zh-cn">Chinese (zh-cn)</option>
-                    <option value="ms-my">Malay (ms-my)</option>
-                    <option value="id-id">Indonesian (id-id)</option>
+                    <option value="en-us">🇺🇸 English (en-us)</option>
+                    <option value="zh-cn">🇨🇳 Chinese (zh-cn)</option>
+                    <option value="ms-my">🇲🇾 Malay (ms-my)</option>
+                    <option value="id-id">🇮🇩 Indonesian (id-id)</option>
                 </select>
             </div>
             
-            <button onclick="startTranscription()">Start Transcription</button>
+            <button onclick="startTranscription()">🚀 Start Transcription</button>
+            <button onclick="startAndMonitor()" style="background: linear-gradient(45deg, #28a745, #20c997);">🔄 Start & Auto-Monitor</button>
         </div>
 
         <!-- Status Check Section -->
         <div class="endpoint-section">
-            <div class="endpoint-title">Check Transcription Status</div>
+            <div class="endpoint-title">
+                📊 Check Transcription Status
+                <span class="status-indicator status-pending" id="status-status"></span>
+            </div>
             
             <div class="form-group">
-                <label for="jobName">Job Name:</label>
+                <label for="jobName">🏷️ Job Name:</label>
                 <input type="text" id="jobName" placeholder="transcribe_job_20231201_123456_abc123">
             </div>
             
-            <button onclick="checkStatus()">Check Status</button>
+            <button onclick="checkStatus()">📈 Check Status</button>
+            <button onclick="getTranscript()" style="background: linear-gradient(45deg, #17a2b8, #138496);">📜 Get Transcript</button>
         </div>
 
         <!-- API Endpoint Configuration -->
         <div class="endpoint-section">
-            <div class="endpoint-title">API Configuration</div>
+            <div class="endpoint-title">⚙️ API Configuration</div>
             
             <div class="form-group">
-                <label for="apiUrl">API Base URL:</label>
-                <input type="url" id="apiUrl" placeholder="https://your-api-gateway-url.amazonaws.com/dev" value="http://localhost:3000">
+                <label for="apiUrl">🔗 API Base URL:</label>
+                <input type="url" id="apiUrl" placeholder="https://your-api-gateway-url.amazonaws.com/dev">
             </div>
+            
+            <button onclick="saveConfig()">💾 Save Config</button>
+            <button onclick="loadConfig()">📂 Load Config</button>
         </div>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Processing request...</p>
+            <p><strong>Processing request...</strong></p>
         </div>
 
         <div id="response" class="response" style="display: none;"></div>
+        
+        <div class="footer">
+            <p>🔧 Created by AWS Transcribe Lambda Test Script</p>
+            <p>Last Updated: <span id="timestamp"></span></p>
+        </div>
     </div>
 
     <script>
-        const apiBaseUrl = () => document.getElementById('apiUrl').value || 'http://localhost:3000';
+        // Set current timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        const apiBaseUrl = () => document.getElementById('apiUrl').value || '';
+        let autoMonitorInterval = null;
+        
+        function updateStatus(elementId, status) {
+            const element = document.getElementById(elementId);
+            element.className = `status-indicator status-${status}`;
+        }
         
         function showLoading() {
             document.getElementById('loading').style.display = 'block';
@@ -518,8 +671,23 @@ def create_html_test_interface():
             hideLoading();
             const responseDiv = document.getElementById('response');
             responseDiv.className = `response ${isError ? 'error' : 'success'}`;
-            responseDiv.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+            
+            let displayText;
+            if (typeof data === 'string') {
+                displayText = data;
+            } else {
+                displayText = JSON.stringify(data, null, 2);
+            }
+            
+            // Add timestamp to response
+            const timestamp = new Date().toLocaleString();
+            displayText = `[${timestamp}] ${displayText}`;
+            
+            responseDiv.textContent = displayText;
             responseDiv.style.display = 'block';
+            
+            // Scroll to response
+            responseDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
         
         async function makeRequest(endpoint, method = 'GET', body = null) {
@@ -556,18 +724,21 @@ def create_html_test_interface():
         
         async function testHealth() {
             showLoading();
+            updateStatus('health-status', 'pending');
             
             const result = await makeRequest('/health');
             
             if (result.success) {
+                updateStatus('health-status', 'success');
                 showResponse({
-                    message: 'Health check successful!',
+                    message: '✅ Health check successful!',
                     status: result.status,
                     data: result.data
                 });
             } else {
+                updateStatus('health-status', 'error');
                 showResponse({
-                    message: 'Health check failed!',
+                    message: '❌ Health check failed!',
                     status: result.status,
                     error: result.data
                 }, true);
@@ -579,11 +750,12 @@ def create_html_test_interface():
             const language = document.getElementById('language').value;
             
             if (!url) {
-                showResponse('Please enter a valid S3 URL', true);
+                showResponse('❌ Please enter a valid S3 URL', true);
                 return;
             }
             
             showLoading();
+            updateStatus('transcribe-status', 'pending');
             
             const result = await makeRequest('/transcribe', 'POST', {
                 url: url,
@@ -591,22 +763,35 @@ def create_html_test_interface():
             });
             
             if (result.success) {
+                updateStatus('transcribe-status', 'success');
+                
                 // Extract job name for convenience
                 if (result.data && result.data.data && result.data.data.job_name) {
                     document.getElementById('jobName').value = result.data.data.job_name;
                 }
                 
                 showResponse({
-                    message: 'Transcription started successfully!',
+                    message: '🚀 Transcription started successfully!',
                     status: result.status,
                     data: result.data
                 });
             } else {
+                updateStatus('transcribe-status', 'error');
                 showResponse({
-                    message: 'Failed to start transcription',
+                    message: '❌ Failed to start transcription',
                     status: result.status,
                     error: result.data
                 }, true);
+            }
+        }
+        
+        async function startAndMonitor() {
+            await startTranscription();
+            
+            // If transcription started successfully, begin monitoring
+            const jobName = document.getElementById('jobName').value;
+            if (jobName) {
+                setTimeout(() => autoMonitor(), 5000); // Start monitoring after 5 seconds
             }
         }
         
@@ -614,36 +799,189 @@ def create_html_test_interface():
             const jobName = document.getElementById('jobName').value;
             
             if (!jobName) {
-                showResponse('Please enter a job name', true);
+                showResponse('❌ Please enter a job name', true);
                 return;
             }
             
             showLoading();
+            updateStatus('status-status', 'pending');
             
             const result = await makeRequest(`/status?job_name=${encodeURIComponent(jobName)}`);
             
             if (result.success) {
+                updateStatus('status-status', 'success');
                 showResponse({
-                    message: 'Status retrieved successfully!',
+                    message: '📊 Status retrieved successfully!',
                     status: result.status,
                     data: result.data
                 });
+                
+                // Check if completed
+                if (result.data && result.data.data && result.data.data.status === 'COMPLETED') {
+                    // Stop auto-monitoring if running
+                    if (autoMonitorInterval) {
+                        clearInterval(autoMonitorInterval);
+                        autoMonitorInterval = null;
+                    }
+                }
             } else {
+                updateStatus('status-status', 'error');
                 showResponse({
-                    message: 'Failed to get status',
+                    message: '❌ Failed to get status',
                     status: result.status,
                     error: result.data
                 }, true);
             }
         }
         
-        // Auto-set API URL if running on a deployed endpoint
+        async function getTranscript() {
+            const jobName = document.getElementById('jobName').value;
+            
+            if (!jobName) {
+                showResponse('❌ Please enter a job name', true);
+                return;
+            }
+            
+            // First check status to get transcript
+            await checkStatus();
+        }
+        
+        function autoMonitor() {
+            const jobName = document.getElementById('jobName').value;
+            
+            if (!jobName) {
+                showResponse('❌ No job name available for monitoring', true);
+                return;
+            }
+            
+            // Clear existing interval
+            if (autoMonitorInterval) {
+                clearInterval(autoMonitorInterval);
+            }
+            
+            // Start monitoring every 10 seconds
+            autoMonitorInterval = setInterval(async () => {
+                await checkStatus();
+                
+                // Check if we should stop monitoring
+                const responseDiv = document.getElementById('response');
+                if (responseDiv.textContent.includes('COMPLETED') || responseDiv.textContent.includes('FAILED')) {
+                    clearInterval(autoMonitorInterval);
+                    autoMonitorInterval = null;
+                    showResponse('🏁 Auto-monitoring stopped - job completed');
+                }
+            }, 10000);
+            
+            showResponse('🔄 Auto-monitoring started - checking every 10 seconds...');
+        }
+        
+        function populateTestData() {
+            document.getElementById('s3Url').value = 'https://great-ai-hackathon-uploads-dev.s3.us-east-1.amazonaws.com/sample-audio.m4a';
+            document.getElementById('language').value = 'en-us';
+            document.getElementById('apiUrl').value = 'https://h0lto8pesc.execute-api.us-east-1.amazonaws.com/dev';
+            showResponse('📝 Test data loaded successfully!');
+        }
+        
+        function clearAll() {
+            document.getElementById('s3Url').value = '';
+            document.getElementById('jobName').value = '';
+            document.getElementById('response').style.display = 'none';
+            
+            // Reset status indicators
+            updateStatus('health-status', 'pending');
+            updateStatus('transcribe-status', 'pending');
+            updateStatus('status-status', 'pending');
+            
+            // Stop auto-monitoring
+            if (autoMonitorInterval) {
+                clearInterval(autoMonitorInterval);
+                autoMonitorInterval = null;
+            }
+            
+            showResponse('🗑️ All fields cleared!');
+        }
+        
+        function exportResults() {
+            const responseDiv = document.getElementById('response');
+            if (responseDiv.style.display === 'none') {
+                showResponse('❌ No results to export', true);
+                return;
+            }
+            
+            const data = responseDiv.textContent;
+            const blob = new Blob([data], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `transcribe-results-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showResponse('💾 Results exported successfully!');
+        }
+        
+        function saveConfig() {
+            const config = {
+                apiUrl: document.getElementById('apiUrl').value,
+                s3Url: document.getElementById('s3Url').value,
+                language: document.getElementById('language').value
+            };
+            
+            localStorage.setItem('transcribeConfig', JSON.stringify(config));
+            showResponse('💾 Configuration saved to browser storage!');
+        }
+        
+        function loadConfig() {
+            const saved = localStorage.getItem('transcribeConfig');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('apiUrl').value = config.apiUrl || '';
+                document.getElementById('s3Url').value = config.s3Url || '';
+                document.getElementById('language').value = config.language || 'en-us';
+                showResponse('📂 Configuration loaded from browser storage!');
+            } else {
+                showResponse('❌ No saved configuration found', true);
+            }
+        }
+        
+        // Auto-detect API URL if running on deployed endpoint
         window.addEventListener('load', function() {
-            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-                // Try to detect API Gateway URL from current location
+            // Try to load saved config first
+            const saved = localStorage.getItem('transcribeConfig');
+            if (saved) {
+                const config = JSON.parse(saved);
+                if (config.apiUrl) {
+                    document.getElementById('apiUrl').value = config.apiUrl;
+                }
+            }
+            
+            // If no saved config and not localhost, try to detect API Gateway URL
+            if (!document.getElementById('apiUrl').value && 
+                window.location.hostname !== 'localhost' && 
+                window.location.hostname !== '127.0.0.1') {
                 const protocol = window.location.protocol;
                 const hostname = window.location.hostname;
                 document.getElementById('apiUrl').value = `${protocol}//${hostname}`;
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'h':
+                        e.preventDefault();
+                        testHealth();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        startTranscription();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        checkStatus();
+                        break;
+                }
             }
         });
     </script>
@@ -654,9 +992,18 @@ def create_html_test_interface():
     try:
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print(f"✅ HTML test interface created: {filename}")
+        print(f"✅ Enhanced HTML test interface created: {filename}")
         print(f"📁 Location: {os.path.abspath(filename)}")
         print(f"🌐 Open this file in your web browser to test the API")
+        print(f"🎨 New features:")
+        print(f"   - Enhanced UI with gradients and animations")
+        print(f"   - Auto-monitoring functionality")
+        print(f"   - Quick action buttons")
+        print(f"   - Export results feature")
+        print(f"   - Save/load configuration")
+        print(f"   - Keyboard shortcuts (Ctrl+H, Ctrl+T, Ctrl+S)")
+        print(f"   - Status indicators")
+        print(f"   - Mobile responsive design")
         return True
     except Exception as e:
         print(f"❌ Error creating HTML file: {e}")
