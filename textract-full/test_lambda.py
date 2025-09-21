@@ -143,11 +143,12 @@ def create_test_html():
                 <label for="category">Document Category (optional - auto-detected if not provided):</label>
                 <select id="category">
                     <option value="">Auto-detect (recommended)</option>
-                    <option value="license">Driver's License</option>
-                    <option value="receipt">Receipt/Invoice</option>
-                    <option value="bank-receipt">Bank Receipt/Statement</option>
                     <option value="idcard">ID Card</option>
-                    <option value="passport">Passport</option>
+                    <option value="license">Driver's License (Combined)</option>
+                    <option value="license-front">Driver's License (Front)</option>
+                    <option value="license-back">Driver's License (Back)</option>
+                    <option value="tnb">TNB Utility Bill</option>
+                    <option value="receipt">Receipt/Invoice</option>
                 </select>
                 <small style="color: #666;">Leave as "Auto-detect" to let AI classify the document type automatically.</small>
             </div>
@@ -157,13 +158,13 @@ def create_test_html():
                 <input type="checkbox" id="custom" style="width: auto; margin-right: 8px;">
                 <span id="customToggle" style="cursor:pointer;">Use custom queries/prompts even if category has default files</span>
                 <br><small style="color: #666;">Enable this to override category-based queries/prompts with your custom ones.</small>
-                <br><small style="color: #666;">Required for document category other than license.</small>
+                <br><small style="color: #666;">Required for specialized document analysis.</small>
                 <br><small style="color: #666;">Analysis mode must include "q" for custom queries to work.</small>
             </div>
 
             <div class="form-group">
                 <label for="queries">Custom Queries (optional):</label>
-                <textarea id="queries" placeholder="What is the transaction amount?&#10;What is the beneficiary name?&#10;What is the reference number?"></textarea>
+                <textarea id="queries" placeholder="What is the full name?&#10;What is the license number?&#10;What is the expiry date?"></textarea>
                 <br><small style="color: #666;">Enter custom questions separated by semicolons (;) or new lines.</small>
                 <br><small style="color: #666;">Custom mode ON: Use your own queries if you have them. If not, use the default queries for the category.</small>
                 <br><small style="color: #666;">Custom mode OFF: Use the default queries for the category, and add your own queries if you have any.</small>
@@ -172,7 +173,7 @@ def create_test_html():
 
             <div class="form-group">
                 <label for="prompt">Custom Prompt (optional):</label>
-                <textarea id="prompt" placeholder="Extract transaction details as JSON:&#10;{&#10;  &quot;amount&quot;: &quot;transaction amount as number&quot;,&#10;  &quot;date&quot;: &quot;date in YYYY-MM-DD format&quot;,&#10;  &quot;beneficiary&quot;: &quot;recipient name&quot;,&#10;  &quot;reference&quot;: &quot;reference or transaction ID&quot;&#10;}"></textarea>
+                <textarea id="prompt" placeholder="Extract Malaysian driving license fields from the provided data.&#10;&#10;Return STRICTLY valid JSON matching this schema:&#10;{&#10;  &quot;full_name&quot;: string|null,&#10;  &quot;identity_no&quot;: string|null,&#10;  &quot;license_number&quot;: string|null,&#10;  &quot;license_classes&quot;: [string]|null,&#10;  &quot;valid_to&quot;: &quot;YYYY-MM-DD&quot;|null&#10;}"></textarea>
                 <small style="color: #666;">Enter custom prompt for Bedrock AI extraction. Overrides category-based prompts when provided.</small>
                 <br><small style="color: #666;">Refer sample prompts <a href="https://github.com/WenHao1223/great-ai-hackathon-test/tree/master/textract-full/src/prompts" style="color: #666" target="_blank">here</a>.</small>
             </div>

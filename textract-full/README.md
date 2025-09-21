@@ -61,7 +61,7 @@ uv run python cli.py --file <path> --mode <mode> [options]
 | ------------ | --------------------------------------------------------- | ----------- | -------- |
 | `--file`     | Path to input file (JPEG/PNG/PDF)                         | -           | ✅       |
 | `--mode`     | Analysis mode: t(ext), f(orms), b(tables), q(uery)        | `tfbq`      | ❌       |
-| `--category` | Document type: `license`, `receipt`, `bank-receipt`, `idcard`, `passport` (auto-detected if not provided) | -           | ❌       |
+| `--category` | Document type: `idcard`, `license`, `license-front`, `license-back`, `tnb`, `receipt` (auto-detected if not provided) | -           | ❌       |
 | `--queries`  | Custom queries separated by semicolons or newlines        | -           | ❌       |
 | `--prompt`   | Custom prompt for Bedrock AI extraction                   | -           | ❌       |
 | `--custom`   | Use custom queries/prompts even if category files exist   | `False`     | ❌       |
@@ -76,6 +76,12 @@ uv run python cli.py --file media/license.jpeg --mode tfbq --region us-east-1
 
 # Full analysis of a driver's license (explicit category)
 uv run python cli.py --file media/license.jpeg --mode tfbq --category license --region us-east-1
+
+# TNB utility bill analysis
+uv run python cli.py --file media/tnb-bill.pdf --mode tfbq --category tnb --region us-east-1
+
+# License front side analysis
+uv run python cli.py --file media/license-front.jpeg --mode tfbq --category license-front --region us-east-1
 
 # Text extraction only with blur detection
 uv run python cli.py --file media/license.jpeg --mode t --region us-east-1
@@ -198,14 +204,18 @@ textract-full/
 │   ├── logger.py                 # Logging utilities
 │   ├── prompts/                  # Bedrock prompts
 │   │   ├── license.txt
+│   │   ├── license-front.txt
+│   │   ├── license-back.txt
 │   │   ├── receipt.txt
 │   │   ├── idcard.txt
-│   │   └── passport.txt
+│   │   └── tnb.txt
 │   └── queries/                  # Textract queries
-│       ├── license.json
-│       ├── receipt.json
-│       ├── idcard.json
-│       └── passport.json
+│       ├── license.txt
+│       ├── license-front.txt
+│       ├── license-back.txt
+│       ├── receipt.txt
+│       ├── idcard.txt
+│       └── tnb.txt
 ├── docs/                         # Documentation
 │   ├── QUICK_REFERENCE.md        # Essential commands
 │   ├── EXAMPLES.md               # Usage examples
@@ -297,10 +307,13 @@ uv run python cli.py --file media/license.jpeg --mode tfbq --category license
 uv run python cli.py --file media/receipt.pdf --mode tfbq
 
 # ID card analysis with custom mode
-uv run python cli.py --file media/idcard.jpg --mode tfbq --custom
+uv run python cli.py --file media/idcard.jpg --mode tfbq --category idcard
 
-# Passport analysis (explicit category)
-uv run python cli.py --file media/passport.jpg --mode tfbq --category passport
+# TNB bill analysis
+uv run python cli.py --file media/tnb-bill.pdf --mode tfbq --category tnb
+
+# License front analysis  
+uv run python cli.py --file media/license-front.jpeg --mode tfbq --category license-front
 ```
 
 ## 🌐 API Usage Examples
@@ -606,11 +619,12 @@ uv run python cli.py --file document.pdf --mode tfbq
 4. **Results Saved**: Detection results saved to `category_detection.json`
 
 **Supported Categories:**
-- `license` - Driver's license, driving permits
-- `receipt` - Purchase receipts, invoices from retail stores
-- `bank-receipt` - Bank transaction receipts, ATM receipts, bank statements
 - `idcard` - Identity cards, national IDs, employee IDs
-- `passport` - Passports, travel documents
+- `license` - Driver's license, driving permits (combined/single-sided)
+- `license-front` - Front side of driver's license specifically
+- `license-back` - Back side of driver's license specifically  
+- `tnb` - TNB utility bills, electricity bills
+- `receipt` - Purchase receipts, invoices from retail stores
 
 **Detection Confidence:**
 - High confidence (0.7-1.0): Very reliable classification
@@ -621,7 +635,7 @@ uv run python cli.py --file document.pdf --mode tfbq
 
 ```bash
 # Specify category explicitly (skips auto-detection)
-uv run python cli.py --file document.pdf --mode tfbq --category bank-receipt
+uv run python cli.py --file document.pdf --mode tfbq --category tnb
 ```
 
 ### Custom Mode
@@ -635,14 +649,14 @@ uv run python cli.py --file document.pdf --mode q --custom --queries "What is th
 # Custom mode with explicit prompt (ignores category prompt files)
 uv run python cli.py --file document.pdf --mode tfb --custom --prompt "Extract all dates as JSON"
 
-# Custom mode for categories without default files (like bank-receipt)
-uv run python cli.py --file bank-receipt.pdf --mode q --category bank-receipt --custom --queries "What is the transaction amount?"
+# Custom mode for categories without extensive default files
+uv run python cli.py --file license-back.jpeg --mode q --category license-back --queries "What is the license number?"
 ```
 
 **Custom Mode Rules:**
 - If `--custom` is used and no custom queries/prompts provided, system checks for category files
-- If no category files exist (like `bank-receipt`), custom queries/prompts are **required**
-- Error thrown if custom mode enabled but no custom content and no category files found
+- All new categories have supporting files, but `--custom` can override them
+- Use custom mode to test new queries or prompts for existing categories
 
 ## 🔧 Configuration
 
@@ -707,11 +721,12 @@ uv run python cli.py --file media/license.jpeg --mode q --queries "What is the n
 
 ### Categories (for queries and AI extraction)
 - **Auto-detected** - AI automatically detects document type (recommended)
-- `receipt` - Purchase receipts, invoices from retail stores
-- `bank-receipt` - Bank transaction receipts, ATM receipts, bank statements
-- `license` - Driver's licenses, driving permits
 - `idcard` - Identity cards, national IDs, employee IDs
-- `passport` - Passports, travel documents
+- `license` - Driver's licenses, driving permits (combined/single-sided)
+- `license-front` - Front side of driver's license specifically
+- `license-back` - Back side of driver's license specifically
+- `tnb` - TNB utility bills, electricity bills
+- `receipt` - Purchase receipts, invoices from retail stores
 
 ### Analysis Modes (`--mode`)
 - `t` - Text detection only (fastest)
@@ -867,14 +882,24 @@ Queries are questions that Textract will attempt to answer based on the document
 --queries "What is the issuing state?;What is the restriction code?;What is the endorsement?"
 ```
 
+**ID Card:**
+```bash
+--queries "What is the issuing country?;What is the document number?;What is the place of birth?"
+```
+
 **Receipt/Invoice:**
 ```bash
 --queries "What is the tax amount?;What is the payment method?;What is the cashier name?"
 ```
 
-**ID Card:**
+**License Front:**
 ```bash
---queries "What is the issuing country?;What is the document number?;What is the place of birth?"
+--queries "What is the issuing authority?;What is the photo quality?;What are the restrictions?"
+```
+
+**License Back:**
+```bash
+--queries "What are the endorsements?;What is the organ donor status?;What are the conditions?"
 ```
 
 ### Writing Custom Prompts
