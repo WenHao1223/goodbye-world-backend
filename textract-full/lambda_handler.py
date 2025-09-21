@@ -24,7 +24,7 @@ def lambda_handler(event, context):
             "file_content": "base64-encoded file content",
             "filename": "original filename",
             "mode": "tfbq" (optional, default: "tfbq"),
-            "category": "license|receipt|idcard|passport" (optional, auto-detected if not provided),
+            "category": "idcard|license|license-front|license-back|tnb|receipt" (optional, auto-detected if not provided),
             "queries": "custom queries separated by semicolons" (optional),
             "prompt": "custom prompt for Bedrock AI extraction" (optional),
             "custom": true/false (optional, default: false),
@@ -229,7 +229,7 @@ if __name__ == '__main__':
             "filename": "test.pdf",
             "mode": "tfbq",
             "category": "receipt",
-            "custom": false,
+            "custom": False,
             "region": "us-east-1"
         })
     }

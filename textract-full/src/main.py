@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--mode", required=False, default="tfbq",
                         help="Analysis mode: t(ext), f(orms), b(tables), q(uery) - combine letters like tfbq")
     parser.add_argument("--category", required=False, default=None,
-                        choices=["license", "receipt", "bank-receipt", "idcard", "passport"],
+                        choices=["idcard", "license", "license-front", "license-back", "tnb", "receipt"],
                         help="Document category for queries and extraction (auto-detected if not provided)")
     parser.add_argument("--queries", required=False, default=None,
                         help="Custom queries separated by semicolons (e.g., 'What is the name?;What is the date?')")

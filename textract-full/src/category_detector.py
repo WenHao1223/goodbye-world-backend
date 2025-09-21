@@ -46,20 +46,21 @@ def detect_document_category(textract_results: Dict, region: str, profile: Optio
     bedrock = session.client("bedrock-runtime")
     
     classification_prompt = """Analyze the following document content and classify it into one of these categories:
-- license: Driver's license, driving permit, or similar identification with driving privileges
-- receipt: Purchase receipt, invoice, bill, or transaction record from retail stores
-- bank-receipt: Bank transaction receipt, ATM receipt, or bank statement
 - idcard: Identity card, national ID, employee ID, or general identification document
-- passport: Passport or travel document
+- license: Driver's license, driving permit, or similar identification with driving privileges (single-sided or combined)
+- license-front: Front side of a driver's license specifically
+- license-back: Back side of a driver's license specifically
+- tnb: TNB (Tenaga Nasional Berhad) utility bill or electricity bill
+- receipt: Purchase receipt, invoice, bill, or transaction record from retail stores
 
-- For confidence scores, use the following scale:
+For confidence scores, use the following scale:
     - 0.0 to 0.4: Low confidence
     - 0.4 to 0.7: Medium confidence
     - 0.7 to 1.0: High confidence
 
 Return your response as JSON with this exact format:
 {
-  "category": "one of: license, receipt, bank-receipt, idcard, passport",
+  "category": "one of: idcard, license, license-front, license-back, tnb, receipt",
   "confidence": {
     "level": "one of: low, medium, high",
     "score": "floating point number between 0.0 and 1.0"
