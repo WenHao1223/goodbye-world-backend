@@ -1,1 +1,0 @@
-# Textract Full Package
