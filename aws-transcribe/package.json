@@ -1,0 +1,39 @@
+{
+  "name": "aws-transcribe-api",
+  "version": "1.0.0",
+  "description": "AWS Transcribe API for multi-language audio/video transcription",
+  "main": "lambda_handler.py",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "deploy-prod": "serverless deploy --stage prod",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f transcribe",
+    "test": "python test_lambda.py"
+  },
+  "dependencies": {
+    "serverless": "^4.0.0",
+    "serverless-python-requirements": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.0"
+  },
+  "keywords": [
+    "aws",
+    "transcribe",
+    "lambda",
+    "serverless",
+    "audio",
+    "video",
+    "transcription",
+    "multi-language"
+  ],
+  "author": "Great AI Hackathon Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/great-ai-hackathon/aws-transcribe"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
